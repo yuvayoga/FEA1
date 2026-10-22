@@ -1,19 +1,109 @@
-# React + Vite
+# FEA - Frontend Assignments
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This repository contains the progressive development of Frontend Assignments built with **React 19**, **Vite**, and **Tailwind CSS**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Assignment Breakdown
 
-## React Compiler
+### Assignment 1: Hardcoded Table Component
+- Built the initial user interface using React and Tailwind CSS.
+- Implemented static table layout with styled header cells and hardcoded company data rows.
+- Added visual styling: rounded borders, subtle drop shadows, alternating zebra striping (`even:bg-gray-200`), and interactive row hover effects (`hover:bg-blue-100`).
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+### Assignment 2 (FEA2): Prop-Driven Table Component
+- Refactored the hardcoded table into a modular, reusable **`<Table />`** component.
+- Made the table fully dynamic and data-agnostic by introducing two required props:
+  - **`headers`**: Array of column definitions (`{ name, label }`). Uses `label` for table header text and `name` to match row keys.
+  - **`data`**: Array of row objects. Dynamically renders cell values using `row[header.name]`.
+- Updated parent component ([`App.jsx`](src/App.jsx)) to configure headers and pass `tableData` into `<Table headers={headers} data={tableData} />`.
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+---
 
-## Expanding the Oxlint configuration
+## Component API (`<Table />`)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+| Prop | Type | Description |
+| :--- | :--- | :--- |
+| `headers` | `Array<{ name: string, label: string }>` | Column configuration. `label` renders in `<th>`, and `name` acts as the object key. |
+| `data` | `Array<Record<string, any>>` | Row data array where each row object has keys matching `header.name`. |
+
+### Example Usage
+
+```jsx
+import React from 'react';
+import Table from './Table';
+
+const headers = [
+  { name: 'company', label: 'Company' },
+  { name: 'contact', label: 'Contact' },
+  { name: 'country', label: 'Country' },
+];
+
+const tableData = [
+  { id: 1, company: 'Alfreds Futterkiste', contact: 'Maria Anders', country: 'Germany' },
+  { id: 2, company: 'Centro comercial Moctezuma', contact: 'Francisco Chang', country: 'Mexico' },
+  { id: 3, company: 'Ernst Handel', contact: 'Roland Mendel', country: 'Austria' },
+  { id: 4, company: 'Island Trading', contact: 'Helen Bennett', country: 'UK' },
+  { id: 5, company: 'Laughing Bacchus Winecellars', contact: 'Yoshi Tannamuri', country: 'Canada' },
+  { id: 6, company: 'Magazzini Alimentari Riuniti', contact: 'Giovanni Rovelli', country: 'Italy' },
+];
+
+export default function App() {
+  return (
+    <div className="mx-auto mt-12 max-w-5xl px-4">
+      <Table headers={headers} data={tableData} />
+    </div>
+  );
+}
+```
+
+---
+
+## Project Structure
+
+```text
+FEA1/
+├── public/              # Static assets
+├── src/
+│   ├── App.css          # Tailwind CSS directives
+│   ├── App.jsx          # Parent component passing headers & tableData
+│   ├── Table.jsx        # Reusable prop-driven Table component
+│   ├── index.css        # Global stylesheet
+│   └── main.jsx         # React DOM entry point
+├── index.html           # Main HTML document
+├── package.json         # Project metadata & scripts
+└── vite.config.js       # Vite build configuration
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18+)
+- `npm`
+
+### Installation
+
+```bash
+npm install
+```
+
+### Development Server
+
+```bash
+npm run dev
+```
+
+### Production Build
+
+```bash
+npm run build
+```
+
+### Linting
+
+```bash
+npm run lint
+```
