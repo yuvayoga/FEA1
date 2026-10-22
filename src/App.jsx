@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import Table, { TableComponent } from './Table';
 
@@ -8,19 +8,57 @@ const headers = [
   { name: 'country', label: 'Country' },
 ];
 
-const tableData = [
-  { id: 1, company: 'Alfreds Futterkiste', contact: 'Maria Anders', country: 'Germany' },
-  { id: 2, company: 'Centro comercial Moctezuma', contact: 'Francisco Chang', country: 'Mexico' },
-  { id: 3, company: 'Ernst Handel', contact: 'Roland Mendel', country: 'Austria' },
-  { id: 4, company: 'Island Trading', contact: 'Helen Bennett', country: 'UK' },
-  { id: 5, company: 'Laughing Bacchus Winecellars', contact: 'Yoshi Tannamuri', country: 'Canada' },
-  { id: 6, company: 'Magazzini Alimentari Riuniti', contact: 'Giovanni Rovelli', country: 'Italy' },
-];
+const API_URL = 'http://localhost:3000/data';
 
 export default function App() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(2);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown((prev) => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+
+    const timer = setTimeout(() => {
+      fetch(API_URL)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((json) => {
+          setData(json);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Failed to fetch from json-server:', error);
+          setLoading(false);
+        });
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
+  }, []);
+
   return (
     <div className="mx-auto mt-12 max-w-5xl px-4">
-      <Table headers={headers} data={tableData} />
+      {loading ? (
+        <div className="flex flex-col items-center justify-center min-h-[45vh] py-16 text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 mb-4" />
+          <p className="text-3xl font-bold text-gray-800">
+            Loading...
+          </p>
+          <span className="mt-3 px-4 py-1 text-sm font-semibold text-black-600">
+            {countdown}s remaining
+          </span>
+        </div>
+      ) : (
+        <Table headers={headers} data={data} />
+      )}
     </div>
   );
 }
