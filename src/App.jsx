@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import './App.css';
 import Table, { TableComponent } from './Table';
+import {
+  fetchTableData,
+  selectTableData,
+  selectIsLoading,
+  selectError,
+} from './store/tableSlice';
 
 const headers = [
   { name: 'company', label: 'Company' },
@@ -8,11 +15,11 @@ const headers = [
   { name: 'country', label: 'Country' },
 ];
 
-const API_URL = 'http://localhost:3000/data';
-
 export default function App() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const data = useSelector(selectTableData);
+  const loading = useSelector(selectIsLoading);
+  const error = useSelector(selectError);
   const [countdown, setCountdown] = useState(2);
 
   useEffect(() => {
@@ -21,28 +28,14 @@ export default function App() {
     }, 1000);
 
     const timer = setTimeout(() => {
-      fetch(API_URL)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((json) => {
-          setData(json);
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.error('Failed to fetch from json-server:', error);
-          setLoading(false);
-        });
+      dispatch(fetchTableData());
     }, 2000);
 
     return () => {
       clearInterval(interval);
       clearTimeout(timer);
     };
-  }, []);
+  }, [dispatch]);
 
   return (
     <div className="mx-auto mt-12 max-w-5xl px-4">
@@ -56,6 +49,11 @@ export default function App() {
             {countdown}s remaining
           </span>
         </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center text-red-600">
+          <p className="font-semibold">Error loading table data:</p>
+          <p className="text-sm mt-1">{error}</p>
+        </div>
       ) : (
         <Table headers={headers} data={data} />
       )}
@@ -64,3 +62,4 @@ export default function App() {
 }
 
 export { Table, TableComponent };
+
