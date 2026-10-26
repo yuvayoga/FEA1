@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function Table({ headers = [], data = [] }) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-md shadow-gray-400/60">
@@ -38,5 +36,3 @@ export default function Table({ headers = [], data = [] }) {
     </div>
   );
 }
-
-export { Table, Table as TableComponent };

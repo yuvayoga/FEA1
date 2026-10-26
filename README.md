@@ -42,6 +42,23 @@ This repository contains the progressive development of Frontend Assignments bui
   - Dispatches `fetchTableData` using **`useDispatch`**.
   - Reads data and loading state using **`useSelector`** with the memoized `selectTableData` and `selectIsLoading` selectors.
 
+### Assignment 5 (FEA5): Filtering and Sorting
+- Added interactive filtering and dynamic sorting controls directly above the table in the parent component ([`App.jsx`](src/App.jsx)).
+- **Filter Feature**:
+  - Rendered a filter text input above the table.
+  - Tracked search text in local component state (`useState('')`).
+  - Performs case-insensitive substring matching against each column in every row using `headers.some(...)`.
+  - Dynamically renders only the rows matching the search query.
+- **Sorting Feature**:
+  - Rendered two dropdown controls above the table:
+    1. **Column Dropdown**: Dynamically populated from table `headers` (e.g. `Company`, `Contact`, `Country`).
+    2. **Order Dropdown**: Provides `Descending` and `Ascending` options.
+  - Tracked sort state with `useState` (`sortData: { column: headers[0].name, order: 'descending' }`).
+  - Default initial sort order is set to the **first column in descending order**.
+  - Applied locale-aware string/number comparison (`localeCompare`) with direction toggling.
+- **Performance Optimization**:
+  - Leveraged **`useMemo`** to efficiently derive `filteredData` and `sortedData` without mutating the original dataset.
+
 ---
 
 ## Component API (`<Table />`)
@@ -54,7 +71,7 @@ This repository contains the progressive development of Frontend Assignments bui
 ### Example Usage ([`App.jsx`](src/App.jsx))
 
 ```jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Table from './Table';
 import {
@@ -77,6 +94,13 @@ export default function App() {
   const error = useSelector(selectError);
   const [countdown, setCountdown] = useState(2);
 
+  // FEA5 State: Filter query & sort configuration
+  const [searchText, setSearchText] = useState('');
+  const [sortData, setSortData] = useState({
+    column: headers[0].name,
+    order: 'descending',
+  });
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCountdown((prev) => (prev > 1 ? prev - 1 : 0));
@@ -91,6 +115,46 @@ export default function App() {
       clearTimeout(timer);
     };
   }, [dispatch]);
+
+  const handleSearchChange = (e) => setSearchText(e.target.value);
+  const handleColumnChange = (e) =>
+    setSortData((prev) => ({ ...prev, column: e.target.value }));
+  const handleOrderChange = (e) =>
+    setSortData((prev) => ({ ...prev, order: e.target.value }));
+
+  // Substring match across all columns
+  const filteredData = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return data;
+    return data.filter((row) =>
+      headers.some((header) => {
+        const cellValue = row[header.name];
+        if (cellValue === null || cellValue === undefined) return false;
+        return String(cellValue).toLowerCase().includes(query);
+      })
+    );
+  }, [data, searchText]);
+
+  // Sort rows based on sortData
+  const sortedData = useMemo(() => {
+    return [...filteredData].sort((a, b) => {
+      const valA = a[sortData.column];
+      const valB = b[sortData.column];
+
+      if (valA === valB) return 0;
+      if (valA === null || valA === undefined) return 1;
+      if (valB === null || valB === undefined) return -1;
+
+      const comparison = String(valA).localeCompare(String(valB), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+
+      const isAscending =
+        sortData.order === 'ascending' || sortData.order === 'asc';
+      return isAscending ? comparison : -comparison;
+    });
+  }, [filteredData, sortData]);
 
   return (
     <div className="mx-auto mt-12 max-w-5xl px-4">
@@ -108,7 +172,37 @@ export default function App() {
           <p className="text-sm mt-1">{error}</p>
         </div>
       ) : (
-        <Table headers={headers} data={data} />
+        <div className="space-y-4">
+          <div className="flex flex-col gap-4 rounded-xl border border-gray-300 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 items-center gap-2">
+              <label htmlFor="filter-input" className="text-sm font-semibold text-gray-700">Filter:</label>
+              <input
+                id="filter-input"
+                type="text"
+                placeholder="Search across all columns..."
+                value={searchText}
+                onChange={handleSearchChange}
+                className="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort-column" className="text-sm font-semibold text-gray-700">Sort by:</label>
+                <select id="sort-column" value={sortData.column} onChange={handleColumnChange} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
+                  {headers.map((h) => <option key={h.name} value={h.name}>{h.label}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort-order" className="text-sm font-semibold text-gray-700">Order:</label>
+                <select id="sort-order" value={sortData.order} onChange={handleOrderChange} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
+                  <option value="descending">Descending</option>
+                  <option value="ascending">Ascending</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <Table headers={headers} data={sortedData} />
+        </div>
       )}
     </div>
   );
@@ -127,10 +221,9 @@ FEA1/
 │   ├── store/           # Redux Toolkit state management
 │   │   ├── store.js     # Redux store configuration (configureStore)
 │   │   └── tableSlice.js# Slice, createAsyncThunk & createSelector
-│   ├── App.css          # Tailwind CSS directives
-│   ├── App.jsx          # Parent component with useDispatch & useSelector
-│   ├── Table.jsx        # Reusable prop-driven Table component
-│   ├── index.css        # Global stylesheet
+│   ├── App.jsx          # Parent component with filter, sort, & Redux state
+│   ├── Table.jsx        # Clean, reusable prop-driven Table component
+│   ├── index.css        # Global stylesheet with Tailwind CSS directives
 │   └── main.jsx         # React DOM entry point wrapped in Redux Provider
 ├── db.json              # Mock database served by json-server
 ├── index.html           # Main HTML document
