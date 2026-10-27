@@ -21,7 +21,6 @@ export default function App() {
   const error = useSelector(selectError);
   const [countdown, setCountdown] = useState(2);
 
-  // Track filter text and sorting data in local state
   const [searchText, setSearchText] = useState('');
   const [sortData, setSortData] = useState({
     column: headers[0].name,
@@ -43,12 +42,10 @@ export default function App() {
     };
   }, [dispatch]);
 
-  // Handle filter input change
   const handleSearchChange = (e) => {
     setSearchText(e.target.value);
   };
 
-  // Handle sort column dropdown change
   const handleColumnChange = (e) => {
     setSortData((prev) => ({
       ...prev,
@@ -56,7 +53,6 @@ export default function App() {
     }));
   };
 
-  // Handle sort order dropdown change
   const handleOrderChange = (e) => {
     setSortData((prev) => ({
       ...prev,
@@ -64,7 +60,6 @@ export default function App() {
     }));
   };
 
-  // Filter rows: substring match against each column in each row
   const filteredData = useMemo(() => {
     const query = searchText.trim().toLowerCase();
     if (!query) return data;
@@ -78,7 +73,6 @@ export default function App() {
     );
   }, [data, searchText]);
 
-  // Sort rows based on selected column and direction (default: first column descending)
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a, b) => {
       const valA = a[sortData.column];
@@ -118,9 +112,7 @@ export default function App() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Filter & Sort Controls above the table */}
           <div className="flex flex-col gap-4 rounded-xl border border-gray-300 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            {/* Filter text input */}
             <div className="flex flex-1 items-center gap-2">
               <label
                 htmlFor="filter-input"
@@ -138,9 +130,7 @@ export default function App() {
               />
             </div>
 
-            {/* Sort Dropdowns */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* First dropdown: Column selection */}
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="sort-column"
@@ -162,7 +152,6 @@ export default function App() {
                 </select>
               </div>
 
-              {/* Second dropdown: Order (ascending/descending) */}
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="sort-order"
@@ -183,7 +172,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Render Table with filtered and sorted data */}
           <Table headers={headers} data={sortedData} />
         </div>
       )}

@@ -59,14 +59,22 @@ This repository contains the progressive development of Frontend Assignments bui
 - **Performance Optimization**:
   - Leveraged **`useMemo`** to efficiently derive `filteredData` and `sortedData` without mutating the original dataset.
 
+### Assignment 6 (FEA6): PropTypes Validation
+- Added runtime prop type validation to the reusable **`<Table />`** component ([`Table.jsx`](src/Table.jsx)) using the official **[`prop-types`](https://www.npmjs.com/package/prop-types)** package.
+- **PropTypes Schema**:
+  - **`headers`**: Validated as `PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string.isRequired, label: PropTypes.string.isRequired })).isRequired`. Guarantees each column definition object contains required `name` and `label` strings.
+  - **`data`**: Validated as `PropTypes.arrayOf(PropTypes.object).isRequired`. Guarantees table data is passed as an array of row objects.
+- Added compile and runtime contract enforcement, preventing silent bugs or mismatched prop shapes during development.
+
 ---
 
 ## Component API (`<Table />`)
 
-| Prop | Type | Description |
-| :--- | :--- | :--- |
-| `headers` | `Array<{ name: string, label: string }>` | Column configuration. `label` renders in `<th>`, and `name` acts as the object key. |
-| `data` | `Array<Record<string, any>>` | Row data array where each row object has keys matching `header.name`. |
+| Prop | Type | Validation (PropTypes) | Required | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `headers` | `Array<{ name: string, label: string }>` | `PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string.isRequired, label: PropTypes.string.isRequired })).isRequired` | Yes | Column configuration. `label` renders in `<th>`, and `name` acts as the object key. |
+| `data` | `Array<Record<string, any>>` | `PropTypes.arrayOf(PropTypes.object).isRequired` | Yes | Row data array where each row object has keys matching `header.name`. |
+
 
 ### Example Usage ([`App.jsx`](src/App.jsx))
 
@@ -207,6 +215,61 @@ export default function App() {
     </div>
   );
 }
+```
+
+### Table Component with PropTypes ([`Table.jsx`](src/Table.jsx))
+
+```jsx
+import PropTypes from 'prop-types';
+
+export default function Table({ headers = [], data = [] }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-md shadow-gray-400/60">
+      <table className="w-full border-collapse text-left text-sm text-black">
+        <thead>
+          <tr className="bg-white">
+            {headers.map((header) => (
+              <th
+                key={header.name}
+                className="border border-gray-300 px-2 py-2 font-bold"
+              >
+                {header.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {data.map((row, index) => (
+            <tr
+              key={row.id ?? index}
+              className="hover:bg-blue-100 transition-colors duration-200 even:bg-gray-200"
+            >
+              {headers.map((header) => (
+                <td
+                  key={header.name}
+                  className="border border-gray-300 px-2 py-2"
+                >
+                  {row[header.name]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+Table.propTypes = {
+  headers: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  data: PropTypes.arrayOf(PropTypes.object).isRequired,
+};
 ```
 
 ---

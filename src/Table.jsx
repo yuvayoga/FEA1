@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function Table({ headers = [], data = [] }) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-md shadow-gray-400/60">
@@ -36,3 +38,13 @@ export default function Table({ headers = [], data = [] }) {
     </div>
   );
 }
+
+Table.propTypes = {
+  headers: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  data: PropTypes.arrayOf(PropTypes.object).isRequired,
+};
