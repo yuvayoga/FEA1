@@ -28,7 +28,7 @@ export default function Table({ headers = [], data = [] }) {
                   key={header.name}
                   className="border border-gray-300 px-2 py-2"
                 >
-                  {row[header.name]}
+                  {header.render ? header.render(row) : row[header.name]}
                 </td>
               ))}
             </tr>
@@ -44,6 +44,7 @@ Table.propTypes = {
     PropTypes.shape({
       name: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
+      render: PropTypes.func,
     })
   ).isRequired,
   data: PropTypes.arrayOf(PropTypes.object).isRequired,

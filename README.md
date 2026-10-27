@@ -66,14 +66,25 @@ This repository contains the progressive development of Frontend Assignments bui
   - **`data`**: Validated as `PropTypes.arrayOf(PropTypes.object).isRequired`. Guarantees table data is passed as an array of row objects.
 - Added compile and runtime contract enforcement, preventing silent bugs or mismatched prop shapes during development.
 
+### Assignment 7 (FEA7): Custom Cell Rendering & Country Flag Icons
+- Added support for custom cell rendering via an optional `render(row)` function property on column headers.
+- **`<Table />` Component Flexibility**:
+  - When a header defines a `render` function (`header.render`), the table invokes `header.render(row)` to render custom JSX instead of directly displaying the raw string/value `row[header.name]`.
+  - Updated `Table.propTypes` to validate optional `render: PropTypes.func`.
+- **Country Flag Icons Integration**:
+  - Installed and integrated the **[`country-flag-icons`](https://www.npmjs.com/package/country-flag-icons)** package (`country-flag-icons/react/3x2`).
+  - Added a custom `render` function to the `country` column in [`App.jsx`](src/App.jsx) that maps country names (Germany, Mexico, Austria, UK, Canada, Italy) to ISO 3166-1 alpha-2 codes (`DE`, `MX`, `AT`, `GB`, `CA`, `IT`).
+  - Renders the vector country flag icon alongside the country name within each table cell with accessible `title` attributes and smooth styling.
+
 ---
 
 ## Component API (`<Table />`)
 
 | Prop | Type | Validation (PropTypes) | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `headers` | `Array<{ name: string, label: string }>` | `PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string.isRequired, label: PropTypes.string.isRequired })).isRequired` | Yes | Column configuration. `label` renders in `<th>`, and `name` acts as the object key. |
+| `headers` | `Array<{ name: string, label: string, render?: function }>` | `PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string.isRequired, label: PropTypes.string.isRequired, render: PropTypes.func })).isRequired` | Yes | Column configuration. `label` renders in `<th>`, `name` acts as key, and optional `render` returns custom cell JSX. |
 | `data` | `Array<Record<string, any>>` | `PropTypes.arrayOf(PropTypes.object).isRequired` | Yes | Row data array where each row object has keys matching `header.name`. |
+
 
 
 ### Example Usage ([`App.jsx`](src/App.jsx))
@@ -170,7 +181,7 @@ export default function App() {
         <div className="flex flex-col items-center justify-center min-h-[45vh] py-16 text-center">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 mb-4" />
           <p className="text-3xl font-bold text-gray-800">Loading...</p>
-          <span className="mt-3 px-4 py-1 text-sm font-semibold text-black-600">
+          <span className="mt-3 px-4 py-1 text-sm font-semibold text-gray-600">
             {countdown}s remaining
           </span>
         </div>
@@ -250,7 +261,7 @@ export default function Table({ headers = [], data = [] }) {
                   key={header.name}
                   className="border border-gray-300 px-2 py-2"
                 >
-                  {row[header.name]}
+                  {header.render ? header.render(row) : row[header.name]}
                 </td>
               ))}
             </tr>
@@ -266,6 +277,7 @@ Table.propTypes = {
     PropTypes.shape({
       name: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
+      render: PropTypes.func,
     })
   ).isRequired,
   data: PropTypes.arrayOf(PropTypes.object).isRequired,

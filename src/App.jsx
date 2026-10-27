@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { DE, MX, AT, GB, CA, IT } from 'country-flag-icons/react/3x2';
 import Table from './Table';
 import {
   fetchTableData,
@@ -8,10 +9,40 @@ import {
   selectError,
 } from './store/tableSlice';
 
+const FLAG_ICONS = {
+  Germany: DE,
+  Mexico: MX,
+  Austria: AT,
+  UK: GB,
+  'United Kingdom': GB,
+  Canada: CA,
+  Italy: IT,
+  DE,
+  MX,
+  AT,
+  GB,
+  CA,
+  IT,
+};
+
 const headers = [
   { name: 'company', label: 'Company' },
   { name: 'contact', label: 'Contact' },
-  { name: 'country', label: 'Country' },
+  {
+    name: 'country',
+    label: 'Country',
+    render: (row) => {
+      const Flag = FLAG_ICONS[row.country];
+      return Flag ? (
+        <span className="inline-flex items-center gap-2">
+          <Flag title={row.country} className="h-4 w-6 rounded-xs shadow-xs" />
+          <span>{row.country}</span>
+        </span>
+      ) : (
+        row.country
+      );
+    },
+  },
 ];
 
 export default function App() {
@@ -87,8 +118,7 @@ export default function App() {
         sensitivity: 'base',
       });
 
-      const isAscending =
-        sortData.order === 'ascending' || sortData.order === 'asc';
+      const isAscending = sortData.order === 'ascending';
       return isAscending ? comparison : -comparison;
     });
   }, [filteredData, sortData]);
@@ -101,7 +131,7 @@ export default function App() {
           <p className="text-3xl font-bold text-gray-800">
             Loading...
           </p>
-          <span className="mt-3 px-4 py-1 text-sm font-semibold text-black-600">
+          <span className="mt-3 px-4 py-1 text-sm font-semibold text-gray-600">
             {countdown}s remaining
           </span>
         </div>
