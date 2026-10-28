@@ -1,6 +1,28 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { DE, MX, AT, GB, CA, IT } from 'country-flag-icons/react/3x2';
+import {
+  AE,
+  AT,
+  AU,
+  BR,
+  CA,
+  CN,
+  DE,
+  ES,
+  FR,
+  GB,
+  IE,
+  IN,
+  IT,
+  JP,
+  KR,
+  MX,
+  NL,
+  SE,
+  SG,
+  US,
+  ZA,
+} from 'country-flag-icons/react/3x2';
 import Table from './Table';
 import {
   fetchTableData,
@@ -10,6 +32,50 @@ import {
 } from './store/tableSlice';
 
 const FLAG_ICONS = {
+  // ISO 3166-1 alpha-3 codes from backend API
+  ARE: AE,
+  AUS: AU,
+  BRA: BR,
+  CAN: CA,
+  CHN: CN,
+  DEU: DE,
+  ESP: ES,
+  FRA: FR,
+  GBR: GB,
+  IND: IN,
+  IRL: IE,
+  ITA: IT,
+  JPN: JP,
+  KOR: KR,
+  MEX: MX,
+  NLD: NL,
+  SGP: SG,
+  SWE: SE,
+  USA: US,
+  ZAF: ZA,
+  // ISO 3166-1 alpha-2 codes
+  AE,
+  AT,
+  AU,
+  BR,
+  CA,
+  CN,
+  DE,
+  ES,
+  FR,
+  GB,
+  IE,
+  IN,
+  IT,
+  JP,
+  KR,
+  MX,
+  NL,
+  SE,
+  SG,
+  US,
+  ZA,
+  // Full names for backwards compatibility
   Germany: DE,
   Mexico: MX,
   Austria: AT,
@@ -17,12 +83,7 @@ const FLAG_ICONS = {
   'United Kingdom': GB,
   Canada: CA,
   Italy: IT,
-  DE,
-  MX,
-  AT,
-  GB,
-  CA,
-  IT,
+  'United States': US,
 };
 
 const headers = [
@@ -31,6 +92,7 @@ const headers = [
   {
     name: 'country',
     label: 'Country',
+    sortable: true,
     render: (row) => {
       const Flag = FLAG_ICONS[row.country];
       return Flag ? (

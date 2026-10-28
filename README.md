@@ -93,6 +93,20 @@ This repository contains the progressive development of Frontend Assignments bui
 - **PropTypes Schema Update**:
   - Updated `Table.propTypes` to validate optional `sortable: PropTypes.bool`.
 
+### Assignment 9 (FEA9): Express Backend Server Integration & 100 Rows Dataset
+- Integrated the application with a dedicated Node.js Express backend server (`table-be`) running at `http://localhost:8080`.
+- Data is fetched from `GET http://localhost:8080/api`, responding with `{ rows, total }` containing 100 rows per page.
+- **Redux Toolkit Integration (`tableSlice.js`)**:
+  - Configured `API_URL` to `http://localhost:8080/api`.
+  - Updated `extraReducers` to handle the `{ rows, total }` response format and extract `action.payload.rows`.
+  - Added `selectTotalRows` selector.
+- **Expanded Country Flag Icons**:
+  - Expanded `country-flag-icons` support across all 20 international country codes present in the dataset (`ARE`, `AUS`, `BRA`, `CAN`, `CHN`, `DEU`, `ESP`, `FRA`, `GBR`, `IND`, `IRL`, `ITA`, `JPN`, `KOR`, `MEX`, `NLD`, `SGP`, `SWE`, `USA`, `ZAF`).
+- **Enhanced Column Sorting**:
+  - Enabled column-level sorting on the `country` column in addition to `company` and `contact`.
+- **Project Scripts**:
+  - Configured `npm run server` to launch `node table-be/index.js` on port 8080.
+
 ---
 
 ## Component API (`<Table />`)
@@ -476,16 +490,12 @@ npm install -g json-server
 
 This setup requires running both the mock backend API and the frontend development server:
 
-#### Step 1: Start the JSON API Server
-Run the `json-server` mock backend (serves `db.json` on port 3000):
+#### Step 1: Start the Backend API Server
+Run the Express backend server (serves on port 8080):
 ```bash
 npm run server
 ```
-*Or using the global/npx command directly:*
-```bash
-npx json-server db.json
-```
-The API endpoint will be live at: **`http://localhost:3000/data`**
+The API endpoint will be live at: **`http://localhost:8080/api`**
 
 #### Step 2: Start the React Frontend Server
 In a separate terminal, launch the Vite dev server:

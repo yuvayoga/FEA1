@@ -161,7 +161,7 @@ export default function Table({ headers = [], data = [] }) {
         <tbody>
           {sortedData.map((row, index) => (
             <tr
-              key={row.id ?? index}
+              key={row.id ?? `${row.company}-${row.contact}-${index}`}
               className="hover:bg-blue-100 transition-colors duration-200 even:bg-gray-200"
             >
               {headers.map((header) => (

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 
-const API_URL = 'http://localhost:3000/data';
+const API_URL = 'http://localhost:8080/api';
 
 export const fetchTableData = createAsyncThunk(
   'table/fetchTableData',
@@ -13,7 +13,7 @@ export const fetchTableData = createAsyncThunk(
       const json = await response.json();
       return json;
     } catch (error) {
-      console.error('Failed to fetch from json-server:', error);
+      console.error('Failed to fetch table data:', error);
       return rejectWithValue(error.message || 'Failed to fetch table data');
     }
   }
@@ -21,6 +21,7 @@ export const fetchTableData = createAsyncThunk(
 
 const initialState = {
   data: [],
+  total: 0,
   loading: true,
   error: null,
 };
@@ -37,7 +38,10 @@ const tableSlice = createSlice({
       })
       .addCase(fetchTableData.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload;
+        state.data = Array.isArray(action.payload)
+          ? action.payload
+          : (action.payload?.rows ?? []);
+        state.total = action.payload?.total ?? state.data.length;
       })
       .addCase(fetchTableData.rejected, (state, action) => {
         state.loading = false;
@@ -51,6 +55,11 @@ const selectTableState = (state) => state.table;
 export const selectTableData = createSelector(
   [selectTableState],
   (table) => table.data
+);
+
+export const selectTotalRows = createSelector(
+  [selectTableState],
+  (table) => table.total
 );
 
 export const selectIsLoading = createSelector(
