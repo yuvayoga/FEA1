@@ -76,13 +76,30 @@ This repository contains the progressive development of Frontend Assignments bui
   - Added a custom `render` function to the `country` column in [`App.jsx`](src/App.jsx) that maps country names (Germany, Mexico, Austria, UK, Canada, Italy) to ISO 3166-1 alpha-2 codes (`DE`, `MX`, `AT`, `GB`, `CA`, `IT`).
   - Renders the vector country flag icon alongside the country name within each table cell with accessible `title` attributes and smooth styling.
 
+### Assignment 8 (FEA8): Column Sorting with Header Sort Icons
+- Replaced the parent-level sort dropdowns with column-level header sorting directly inside the reusable **`<Table />`** component.
+- **Header Configuration**:
+  - Added `sortable: true` property in the header configuration for the first two columns (`company` and `contact`) in [`App.jsx`](src/App.jsx).
+- **Internal Sorting State**:
+  - Stored sorting configuration (`sortData: { column: null, order: null }`) directly within `<Table />` using `useState`.
+  - Derived sorted rows dynamically using `useMemo` without mutating incoming props.
+- **Interactive SVG Sort Icons**:
+  - Rendered inline SVG vector icons for upward and downward arrows next to the header label for sortable columns.
+  - **Initial State**: Sort icons are hidden when no sorting order is set.
+  - **Hover State**: Hovering over a sortable column header reveals a downward arrow icon.
+  - **Click to Sort Descending**: Clicking the sortable header or icon sorts the column in descending order, keeping the downward arrow visible.
+  - **Click to Toggle Ascending**: Clicking the downward arrow icon toggles the column to ascending order, turning it into an upward arrow icon.
+  - **Click to Remove Sorting**: Clicking the upward arrow icon resets sorting to `null`, reverting to the original dataset order.
+- **PropTypes Schema Update**:
+  - Updated `Table.propTypes` to validate optional `sortable: PropTypes.bool`.
+
 ---
 
 ## Component API (`<Table />`)
 
 | Prop | Type | Validation (PropTypes) | Required | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `headers` | `Array<{ name: string, label: string, render?: function }>` | `PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string.isRequired, label: PropTypes.string.isRequired, render: PropTypes.func })).isRequired` | Yes | Column configuration. `label` renders in `<th>`, `name` acts as key, and optional `render` returns custom cell JSX. |
+| `headers` | `Array<{ name: string, label: string, render?: function, sortable?: boolean }>` | `PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string.isRequired, label: PropTypes.string.isRequired, render: PropTypes.func, sortable: PropTypes.bool })).isRequired` | Yes | Column configuration. `label` renders in `<th>`, `name` acts as key, optional `render` returns custom cell JSX, and optional `sortable` enables column sorting. |
 | `data` | `Array<Record<string, any>>` | `PropTypes.arrayOf(PropTypes.object).isRequired` | Yes | Row data array where each row object has keys matching `header.name`. |
 
 
@@ -90,8 +107,9 @@ This repository contains the progressive development of Frontend Assignments bui
 ### Example Usage ([`App.jsx`](src/App.jsx))
 
 ```jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { DE, MX, AT, GB, CA, IT } from 'country-flag-icons/react/3x2';
 import Table from './Table';
 import {
   fetchTableData,
@@ -100,10 +118,40 @@ import {
   selectError,
 } from './store/tableSlice';
 
+const FLAG_ICONS = {
+  Germany: DE,
+  Mexico: MX,
+  Austria: AT,
+  UK: GB,
+  'United Kingdom': GB,
+  Canada: CA,
+  Italy: IT,
+  DE,
+  MX,
+  AT,
+  GB,
+  CA,
+  IT,
+};
+
 const headers = [
-  { name: 'company', label: 'Company' },
-  { name: 'contact', label: 'Contact' },
-  { name: 'country', label: 'Country' },
+  { name: 'company', label: 'Company', sortable: true },
+  { name: 'contact', label: 'Contact', sortable: true },
+  {
+    name: 'country',
+    label: 'Country',
+    render: (row) => {
+      const Flag = FLAG_ICONS[row.country];
+      return Flag ? (
+        <span className="inline-flex items-center gap-2">
+          <Flag title={row.country} className="h-4 w-6 rounded-xs shadow-xs" />
+          <span>{row.country}</span>
+        </span>
+      ) : (
+        row.country
+      );
+    },
+  },
 ];
 
 export default function App() {
@@ -113,12 +161,7 @@ export default function App() {
   const error = useSelector(selectError);
   const [countdown, setCountdown] = useState(2);
 
-  // FEA5 State: Filter query & sort configuration
   const [searchText, setSearchText] = useState('');
-  const [sortData, setSortData] = useState({
-    column: headers[0].name,
-    order: 'descending',
-  });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -136,12 +179,7 @@ export default function App() {
   }, [dispatch]);
 
   const handleSearchChange = (e) => setSearchText(e.target.value);
-  const handleColumnChange = (e) =>
-    setSortData((prev) => ({ ...prev, column: e.target.value }));
-  const handleOrderChange = (e) =>
-    setSortData((prev) => ({ ...prev, order: e.target.value }));
 
-  // Substring match across all columns
   const filteredData = useMemo(() => {
     const query = searchText.trim().toLowerCase();
     if (!query) return data;
@@ -153,27 +191,6 @@ export default function App() {
       })
     );
   }, [data, searchText]);
-
-  // Sort rows based on sortData
-  const sortedData = useMemo(() => {
-    return [...filteredData].sort((a, b) => {
-      const valA = a[sortData.column];
-      const valB = b[sortData.column];
-
-      if (valA === valB) return 0;
-      if (valA === null || valA === undefined) return 1;
-      if (valB === null || valB === undefined) return -1;
-
-      const comparison = String(valA).localeCompare(String(valB), undefined, {
-        numeric: true,
-        sensitivity: 'base',
-      });
-
-      const isAscending =
-        sortData.order === 'ascending' || sortData.order === 'asc';
-      return isAscending ? comparison : -comparison;
-    });
-  }, [filteredData, sortData]);
 
   return (
     <div className="mx-auto mt-12 max-w-5xl px-4">
@@ -192,35 +209,20 @@ export default function App() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-col gap-4 rounded-xl border border-gray-300 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <label htmlFor="filter-input" className="text-sm font-semibold text-gray-700">Filter:</label>
+          <div className="rounded-xl border border-gray-300 bg-white p-4 shadow-sm">
+            <div className="flex w-full items-center gap-3">
+              <label htmlFor="filter-input" className="text-sm font-semibold text-gray-700 whitespace-nowrap">Filter:</label>
               <input
                 id="filter-input"
                 type="text"
                 placeholder="Search across all columns..."
                 value={searchText}
                 onChange={handleSearchChange}
-                className="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+                className="w-full flex-1 rounded-lg border border-gray-300 px-3.5 py-2 text-sm"
               />
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <label htmlFor="sort-column" className="text-sm font-semibold text-gray-700">Sort by:</label>
-                <select id="sort-column" value={sortData.column} onChange={handleColumnChange} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
-                  {headers.map((h) => <option key={h.name} value={h.name}>{h.label}</option>)}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label htmlFor="sort-order" className="text-sm font-semibold text-gray-700">Order:</label>
-                <select id="sort-order" value={sortData.order} onChange={handleOrderChange} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
-                  <option value="descending">Descending</option>
-                  <option value="ascending">Ascending</option>
-                </select>
-              </div>
-            </div>
           </div>
-          <Table headers={headers} data={sortedData} />
+          <Table headers={headers} data={filteredData} />
         </div>
       )}
     </div>
@@ -228,30 +230,171 @@ export default function App() {
 }
 ```
 
-### Table Component with PropTypes ([`Table.jsx`](src/Table.jsx))
+### Table Component with Internal Sorting & Sort Icons ([`Table.jsx`](src/Table.jsx))
 
 ```jsx
+import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 
+function DownArrowIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3"
+      />
+    </svg>
+  );
+}
+
+DownArrowIcon.propTypes = {
+  className: PropTypes.string,
+};
+
+function UpArrowIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
+      />
+    </svg>
+  );
+}
+
+UpArrowIcon.propTypes = {
+  className: PropTypes.string,
+};
+
 export default function Table({ headers = [], data = [] }) {
+  const [sortData, setSortData] = useState({
+    column: null,
+    order: null,
+  });
+  const [hoveredColumn, setHoveredColumn] = useState(null);
+
+  const handleSort = (columnName) => {
+    setSortData((prev) => {
+      if (prev.column !== columnName) {
+        return { column: columnName, order: 'descending' };
+      }
+      if (prev.order === 'descending') {
+        return { column: columnName, order: 'ascending' };
+      }
+      if (prev.order === 'ascending') {
+        return { column: null, order: null };
+      }
+      return { column: columnName, order: 'descending' };
+    });
+  };
+
+  const sortedData = useMemo(() => {
+    if (!sortData.column || !sortData.order) {
+      return data;
+    }
+
+    return [...data].sort((a, b) => {
+      const valA = a[sortData.column];
+      const valB = b[sortData.column];
+
+      if (valA === valB) return 0;
+      if (valA === null || valA === undefined) return 1;
+      if (valB === null || valB === undefined) return -1;
+
+      const comparison = String(valA).localeCompare(String(valB), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+
+      return sortData.order === 'ascending' ? comparison : -comparison;
+    });
+  }, [data, sortData]);
+
   return (
     <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-md shadow-gray-400/60">
       <table className="w-full border-collapse text-left text-sm text-black">
         <thead>
           <tr className="bg-white">
-            {headers.map((header) => (
-              <th
-                key={header.name}
-                className="border border-gray-300 px-2 py-2 font-bold"
-              >
-                {header.label}
-              </th>
-            ))}
+            {headers.map((header) => {
+              const isCurrent = sortData.column === header.name;
+              const isDescending = isCurrent && sortData.order === 'descending';
+              const isAscending = isCurrent && sortData.order === 'ascending';
+              const isHovered = hoveredColumn === header.name;
+
+              return (
+                <th
+                  key={header.name}
+                  onClick={() => header.sortable && handleSort(header.name)}
+                  onMouseEnter={() =>
+                    header.sortable && setHoveredColumn(header.name)
+                  }
+                  onMouseLeave={() =>
+                    header.sortable && setHoveredColumn(null)
+                  }
+                  className={`border border-gray-300 px-2 py-2 font-bold ${
+                    header.sortable
+                      ? 'cursor-pointer select-none group hover:bg-gray-50 transition-colors'
+                      : ''
+                  }`}
+                  aria-sort={
+                    !header.sortable
+                      ? undefined
+                      : isDescending
+                      ? 'descending'
+                      : isAscending
+                      ? 'ascending'
+                      : 'none'
+                  }
+                >
+                  <div className="inline-flex items-center gap-1.5">
+                    <span>{header.label}</span>
+                    {header.sortable && (
+                      <span
+                        className="inline-flex items-center"
+                        data-testid={`sort-icon-${header.name}`}
+                      >
+                        {isAscending ? (
+                          <UpArrowIcon className="h-4 w-4 text-gray-800 opacity-100" />
+                        ) : isDescending ? (
+                          <DownArrowIcon className="h-4 w-4 text-gray-800 opacity-100" />
+                        ) : (
+                          <DownArrowIcon
+                            className={`h-4 w-4 text-gray-400 transition-opacity duration-150 ${
+                              isHovered
+                                ? 'opacity-100'
+                                : 'opacity-0 group-hover:opacity-100'
+                            }`}
+                          />
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </th>
+              );
+            })}
           </tr>
         </thead>
 
         <tbody>
-          {data.map((row, index) => (
+          {sortedData.map((row, index) => (
             <tr
               key={row.id ?? index}
               className="hover:bg-blue-100 transition-colors duration-200 even:bg-gray-200"
@@ -278,6 +421,7 @@ Table.propTypes = {
       name: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
       render: PropTypes.func,
+      sortable: PropTypes.bool,
     })
   ).isRequired,
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
