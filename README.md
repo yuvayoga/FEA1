@@ -121,6 +121,22 @@ This repository contains the progressive development of Frontend Assignments bui
   - Debounces `filter` search input updates (250ms) before dispatching API requests.
   - Immediately dispatches API requests with updated `sortCol` and `sortKey` when sortable table headers are clicked.
 
+### Assignment 11 (FEA11): Infinite Scroll with Intersection Observer API (`page` and `limit`)
+- Implemented infinite scroll using the native **Intersection Observer API** to automatically load more rows as the user scrolls to the bottom of the table.
+- **Backend Pagination**:
+  - Configured `limit=100` rows per page.
+  - Passes `page` and `limit` query parameters to `GET http://localhost:8080/api?page=...&limit=100`.
+- **Redux Toolkit Integration (`tableSlice.js`)**:
+  - Enhanced `fetchTableData` to include `page` and `limit` in URL query parameters.
+  - Handles initial load and filter/sort resets with `page: 1` (replacing rows) while appending rows on `page > 1`.
+  - Added Redux state tracking and selectors: `selectIsFetchingMore`, `selectHasMore`, `selectCurrentPage`.
+- **Intersection Observer & UX (`App.jsx`)**:
+  - Renders a sentinel target element below the table monitored by an `IntersectionObserver`.
+  - Automatically fetches the next page when the user reaches the end of current content.
+  - Displays a bottom loading spinner indicator (`Loading more rows...`) while fetching subsequent batches.
+  - Displays a completed status (`Showing all X rows`) once all rows have been loaded.
+  - Automatically resets pagination back to page 1 whenever search filters or column sorting change.
+
 ---
 
 ## Component API (`<Table />`)

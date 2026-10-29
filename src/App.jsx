@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   AE,
@@ -27,6 +27,10 @@ import Table from './Table';
 import {
   fetchTableData,
   selectTableData,
+  selectTotalRows,
+  selectIsFetchingMore,
+  selectHasMore,
+  selectCurrentPage,
   selectError,
 } from './store/tableSlice';
 
@@ -109,6 +113,10 @@ const headers = [
 export default function App() {
   const dispatch = useDispatch();
   const data = useSelector(selectTableData);
+  const total = useSelector(selectTotalRows);
+  const isFetchingMore = useSelector(selectIsFetchingMore);
+  const hasMore = useSelector(selectHasMore);
+  const currentPage = useSelector(selectCurrentPage);
   const error = useSelector(selectError);
   const [countdown, setCountdown] = useState(2);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -118,6 +126,8 @@ export default function App() {
   const [sortKey, setSortKey] = useState(null);
 
   const sortRef = useRef({ sortCol, sortKey });
+  const observerTarget = useRef(null);
+  const loadMoreRef = useRef();
 
   useEffect(() => {
     sortRef.current = { sortCol, sortKey };
@@ -129,7 +139,7 @@ export default function App() {
     }, 1000);
 
     const timer = setTimeout(async () => {
-      await dispatch(fetchTableData()).unwrap().catch(() => {});
+      await dispatch(fetchTableData({ page: 1, limit: 100 })).unwrap().catch(() => {});
       setInitialLoading(false);
     }, 2000);
 
@@ -153,6 +163,8 @@ export default function App() {
           filter: searchText,
           sortCol: sortRef.current.sortCol,
           sortKey: sortRef.current.sortKey,
+          page: 1,
+          limit: 100,
         })
       );
     }, 250);
@@ -171,9 +183,55 @@ export default function App() {
         filter: searchText,
         sortCol: column,
         sortKey: direction,
+        page: 1,
+        limit: 100,
       })
     );
   };
+
+  // Infinite scroll load more handler
+  const handleLoadMore = useCallback(() => {
+    if (!hasMore || isFetchingMore || initialLoading) return;
+    dispatch(
+      fetchTableData({
+        filter: searchText,
+        sortCol: sortRef.current.sortCol,
+        sortKey: sortRef.current.sortKey,
+        page: currentPage + 1,
+        limit: 100,
+      })
+    );
+  }, [hasMore, isFetchingMore, initialLoading, searchText, currentPage, dispatch]);
+
+  useEffect(() => {
+    loadMoreRef.current = handleLoadMore;
+  }, [handleLoadMore]);
+
+  // Setup Intersection Observer on the sentinel target element
+  useEffect(() => {
+    if (initialLoading) return;
+    const target = observerTarget.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          loadMoreRef.current?.();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [initialLoading]);
 
   return (
     <div className="mx-auto mt-12 max-w-5xl px-4">
@@ -220,6 +278,24 @@ export default function App() {
             sortKey={sortKey || undefined}
             onSort={handleSort}
           />
+
+          {/* Sentinel for Intersection Observer */}
+          <div ref={observerTarget} className="h-4" />
+
+          {/* Loading more indicator */}
+          {isFetchingMore && (
+            <div className="flex items-center justify-center py-6 gap-2 text-gray-600 text-sm">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+              <span className="font-medium">Loading more rows...</span>
+            </div>
+          )}
+
+          {/* All loaded indicator */}
+          {!hasMore && data.length > 0 && (
+            <div className="text-center py-6 text-sm text-gray-500 font-medium">
+              Showing all {total} rows
+            </div>
+          )}
         </div>
       )}
     </div>
