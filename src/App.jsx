@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   AE,
@@ -27,7 +27,6 @@ import Table from './Table';
 import {
   fetchTableData,
   selectTableData,
-  selectIsLoading,
   selectError,
 } from './store/tableSlice';
 
@@ -110,19 +109,28 @@ const headers = [
 export default function App() {
   const dispatch = useDispatch();
   const data = useSelector(selectTableData);
-  const loading = useSelector(selectIsLoading);
   const error = useSelector(selectError);
   const [countdown, setCountdown] = useState(2);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const [searchText, setSearchText] = useState('');
+  const [sortCol, setSortCol] = useState(null);
+  const [sortKey, setSortKey] = useState(null);
+
+  const sortRef = useRef({ sortCol, sortKey });
+
+  useEffect(() => {
+    sortRef.current = { sortCol, sortKey };
+  }, [sortCol, sortKey]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCountdown((prev) => (prev > 1 ? prev - 1 : 0));
     }, 1000);
 
-    const timer = setTimeout(() => {
-      dispatch(fetchTableData());
+    const timer = setTimeout(async () => {
+      await dispatch(fetchTableData()).unwrap().catch(() => {});
+      setInitialLoading(false);
     }, 2000);
 
     return () => {
@@ -135,22 +143,41 @@ export default function App() {
     setSearchText(e.target.value);
   };
 
-  const filteredData = useMemo(() => {
-    const query = searchText.trim().toLowerCase();
-    if (!query) return data;
+  // Debounced search query param updates
+  useEffect(() => {
+    if (initialLoading) return;
 
-    return data.filter((row) =>
-      headers.some((header) => {
-        const cellValue = row[header.name];
-        if (cellValue === null || cellValue === undefined) return false;
-        return String(cellValue).toLowerCase().includes(query);
+    const timer = setTimeout(() => {
+      dispatch(
+        fetchTableData({
+          filter: searchText,
+          sortCol: sortRef.current.sortCol,
+          sortKey: sortRef.current.sortKey,
+        })
+      );
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchText, initialLoading, dispatch]);
+
+  // Handle column header sort updates via query params
+  const handleSort = (column, direction) => {
+    setSortCol(column);
+    setSortKey(direction);
+    dispatch(
+      fetchTableData({
+        filter: searchText,
+        sortCol: column,
+        sortKey: direction,
       })
     );
-  }, [data, searchText]);
+  };
 
   return (
     <div className="mx-auto mt-12 max-w-5xl px-4">
-      {loading ? (
+      {initialLoading ? (
         <div className="flex flex-col items-center justify-center min-h-[45vh] py-16 text-center">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 mb-4" />
           <p className="text-3xl font-bold text-gray-800">
@@ -186,7 +213,13 @@ export default function App() {
             </div>
           </div>
 
-          <Table headers={headers} data={filteredData} />
+          <Table
+            headers={headers}
+            data={data}
+            sortCol={sortCol || undefined}
+            sortKey={sortKey || undefined}
+            onSort={handleSort}
+          />
         </div>
       )}
     </div>

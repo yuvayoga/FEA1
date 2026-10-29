@@ -105,7 +105,21 @@ This repository contains the progressive development of Frontend Assignments bui
 - **Enhanced Column Sorting**:
   - Enabled column-level sorting on the `country` column in addition to `company` and `contact`.
 - **Project Scripts**:
-  - Configured `npm run server` to launch `node table-be/index.js` on port 8080.
+### Assignment 10 (FEA10): Backend Filtering & Sorting with Query Parameters (`filter`, `sortCol`, `sortKey`)
+- Replaced client-side filtering with backend query parameter `filter` (`http://localhost:8080/api?filter=...`).
+- Replaced client-side sorting with backend query parameters `sortCol` (matching column key names: `company`, `contact`, `country`) and `sortKey` (`"asc"` / `"desc"`).
+- **Redux Toolkit Integration (`tableSlice.js`)**:
+  - Enhanced `fetchTableData` async thunk to accept `{ filter, sortCol, sortKey }` params and dynamically construct URL query parameters via `URL` and `URLSearchParams`.
+  - Added Redux state tracking and selectors: `selectFilter`, `selectSortCol`, `selectSortKey`.
+- **Reusable `<Table />` Component**:
+  - Supports controlled mode via `sortCol`, `sortKey`, and `onSort(columnName, sortKey)` callback props.
+  - Clicking sortable column headers cycles through `desc` (downward arrow) -> `asc` (upward arrow) -> `null` (reset).
+  - Maintains accessible `aria-sort` values (`descending`, `ascending`, `none`) and interactive SVG sort icons.
+  - Automatically avoids redundant client-side sorting when backend sorting is active.
+- **Parent Component (`App.jsx`)**:
+  - Passes backend `data` directly to `<Table />` without client-side row filtering.
+  - Debounces `filter` search input updates (250ms) before dispatching API requests.
+  - Immediately dispatches API requests with updated `sortCol` and `sortKey` when sortable table headers are clicked.
 
 ---
 
@@ -115,6 +129,9 @@ This repository contains the progressive development of Frontend Assignments bui
 | :--- | :--- | :--- | :--- | :--- |
 | `headers` | `Array<{ name: string, label: string, render?: function, sortable?: boolean }>` | `PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string.isRequired, label: PropTypes.string.isRequired, render: PropTypes.func, sortable: PropTypes.bool })).isRequired` | Yes | Column configuration. `label` renders in `<th>`, `name` acts as key, optional `render` returns custom cell JSX, and optional `sortable` enables column sorting. |
 | `data` | `Array<Record<string, any>>` | `PropTypes.arrayOf(PropTypes.object).isRequired` | Yes | Row data array where each row object has keys matching `header.name`. |
+| `sortCol` | `string` | `PropTypes.string` | No | Active sort column key matching the response key name (`company`, `contact`, `country`). |
+| `sortKey` | `string` | `PropTypes.string` | No | Active sort direction (`"asc"` or `"desc"`). |
+| `onSort` | `function` | `PropTypes.func` | No | Callback invoked on column header click with `(columnName, sortKey)`. |
 
 
 

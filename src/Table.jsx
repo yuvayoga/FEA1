@@ -49,36 +49,78 @@ UpArrowIcon.propTypes = {
   className: PropTypes.string,
 };
 
-export default function Table({ headers = [], data = [] }) {
-  const [sortData, setSortData] = useState({
+export default function Table({
+  headers = [],
+  data = [],
+  sortCol: propSortCol,
+  sortKey: propSortKey,
+  onSort,
+}) {
+  const [internalSortData, setInternalSortData] = useState({
     column: null,
     order: null,
   });
   const [hoveredColumn, setHoveredColumn] = useState(null);
 
+  const isControlled =
+    onSort !== undefined || propSortCol !== undefined || propSortKey !== undefined;
+
+  const currentColumn = isControlled ? propSortCol ?? null : internalSortData.column;
+  const currentOrder = isControlled
+    ? propSortKey === 'asc'
+      ? 'ascending'
+      : propSortKey === 'desc'
+      ? 'descending'
+      : propSortKey ?? null
+    : internalSortData.order;
+
   const handleSort = (columnName) => {
-    setSortData((prev) => {
-      if (prev.column !== columnName) {
-        return { column: columnName, order: 'descending' };
-      }
-      if (prev.order === 'descending') {
-        return { column: columnName, order: 'ascending' };
-      }
-      if (prev.order === 'ascending') {
-        return { column: null, order: null };
-      }
-      return { column: columnName, order: 'descending' };
-    });
+    let nextColumn = columnName;
+    let nextOrder = 'descending';
+    let nextSortKey = 'desc';
+
+    if (currentColumn !== columnName) {
+      nextColumn = columnName;
+      nextOrder = 'descending';
+      nextSortKey = 'desc';
+    } else if (currentOrder === 'descending' || currentOrder === 'desc') {
+      nextColumn = columnName;
+      nextOrder = 'ascending';
+      nextSortKey = 'asc';
+    } else if (currentOrder === 'ascending' || currentOrder === 'asc') {
+      nextColumn = null;
+      nextOrder = null;
+      nextSortKey = null;
+    } else {
+      nextColumn = columnName;
+      nextOrder = 'descending';
+      nextSortKey = 'desc';
+    }
+
+    if (onSort) {
+      onSort(nextColumn, nextSortKey);
+    }
+    if (!isControlled || onSort === undefined) {
+      setInternalSortData({
+        column: nextColumn,
+        order: nextOrder,
+      });
+    }
   };
 
   const sortedData = useMemo(() => {
-    if (!sortData.column || !sortData.order) {
+    // If backend sorting is handled (onSort provided), table data from backend is already sorted
+    if (isControlled && onSort) {
+      return data;
+    }
+
+    if (!currentColumn || !currentOrder) {
       return data;
     }
 
     return [...data].sort((a, b) => {
-      const valA = a[sortData.column];
-      const valB = b[sortData.column];
+      const valA = a[currentColumn];
+      const valB = b[currentColumn];
 
       if (valA === valB) return 0;
       if (valA === null || valA === undefined) return 1;
@@ -89,9 +131,10 @@ export default function Table({ headers = [], data = [] }) {
         sensitivity: 'base',
       });
 
-      return sortData.order === 'ascending' ? comparison : -comparison;
+      const isAsc = currentOrder === 'ascending' || currentOrder === 'asc';
+      return isAsc ? comparison : -comparison;
     });
-  }, [data, sortData]);
+  }, [data, currentColumn, currentOrder, isControlled, onSort]);
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-md shadow-gray-400/60">
@@ -99,9 +142,11 @@ export default function Table({ headers = [], data = [] }) {
         <thead>
           <tr className="bg-white">
             {headers.map((header) => {
-              const isCurrent = sortData.column === header.name;
-              const isDescending = isCurrent && sortData.order === 'descending';
-              const isAscending = isCurrent && sortData.order === 'ascending';
+              const isCurrent = currentColumn === header.name;
+              const isDescending =
+                isCurrent && (currentOrder === 'descending' || currentOrder === 'desc');
+              const isAscending =
+                isCurrent && (currentOrder === 'ascending' || currentOrder === 'asc');
               const isHovered = hoveredColumn === header.name;
 
               return (
@@ -190,4 +235,7 @@ Table.propTypes = {
     })
   ).isRequired,
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
+  sortCol: PropTypes.string,
+  sortKey: PropTypes.string,
+  onSort: PropTypes.func,
 };
