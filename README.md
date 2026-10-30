@@ -137,6 +137,24 @@ This repository contains the progressive development of Frontend Assignments bui
   - Displays a completed status (`Showing all X rows`) once all rows have been loaded.
   - Automatically resets pagination back to page 1 whenever search filters or column sorting change.
 
+### Assignment 12 (FEA12): Step Pagination with Page Caching (`limit=10`)
+- Implemented step pagination with a 5-button navigation bar positioned below the table:
+  - **Left arrow button (`<`)**: Navigates to the previous page (`currentPage - 1`); disabled when on the first page.
+  - **Left page button**: Displays `currentPage - 1`; rendered empty and invisible (no border) when the first page is selected.
+  - **Center page button**: Displays the current page number (`currentPage`) with active highlight styling; clicking navigates to the active page.
+  - **Right page button**: Displays `currentPage + 1`; rendered empty and invisible (no border) when the last page is selected.
+  - **Right arrow button (`>`)**: Navigates to the next page (`currentPage + 1`); disabled when on the last page.
+- **Page Size**: Configured `limit=10` items per page.
+- **Client-Side Page Caching**:
+  - Checks Redux state `pages[targetPage]` before triggering network requests.
+  - If data for the requested page already exists in the client cache, navigation occurs instantly without an HTTP call.
+  - If no data exists for the target page, dispatches an API request: `GET http://localhost:8080/api?page=...&limit=10`.
+  - Invalidates the page cache and resets to page 1 whenever `filter` or `sort` changes.
+- **Redux Toolkit Integration (`tableSlice.js`)**:
+  - Manages `data`, `pages` (page-to-rows map), `currentPage`, `total`, `limit`, `loading`, `pageLoading`, and `error`.
+  - Exported memoized selectors: `selectTableData`, `selectTotalRows`, `selectCurrentPage`, `selectTotalPages`, `selectPageCache`, `selectIsPageLoading`.
+
+
 ---
 
 ## Component API (`<Table />`)

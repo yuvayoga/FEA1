@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   AE,
@@ -26,11 +26,13 @@ import {
 import Table from './Table';
 import {
   fetchTableData,
+  setCurrentPage,
   selectTableData,
   selectTotalRows,
-  selectIsFetchingMore,
-  selectHasMore,
   selectCurrentPage,
+  selectTotalPages,
+  selectPageCache,
+  selectIsPageLoading,
   selectError,
 } from './store/tableSlice';
 
@@ -114,10 +116,12 @@ export default function App() {
   const dispatch = useDispatch();
   const data = useSelector(selectTableData);
   const total = useSelector(selectTotalRows);
-  const isFetchingMore = useSelector(selectIsFetchingMore);
-  const hasMore = useSelector(selectHasMore);
   const currentPage = useSelector(selectCurrentPage);
+  const totalPages = useSelector(selectTotalPages);
+  const pageCache = useSelector(selectPageCache);
+  const isPageLoading = useSelector(selectIsPageLoading);
   const error = useSelector(selectError);
+
   const [countdown, setCountdown] = useState(2);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -126,8 +130,6 @@ export default function App() {
   const [sortKey, setSortKey] = useState(null);
 
   const sortRef = useRef({ sortCol, sortKey });
-  const observerTarget = useRef(null);
-  const loadMoreRef = useRef();
 
   useEffect(() => {
     sortRef.current = { sortCol, sortKey };
@@ -139,7 +141,7 @@ export default function App() {
     }, 1000);
 
     const timer = setTimeout(async () => {
-      await dispatch(fetchTableData({ page: 1, limit: 100 })).unwrap().catch(() => {});
+      await dispatch(fetchTableData({ page: 1, limit: 10 })).unwrap().catch(() => {});
       setInitialLoading(false);
     }, 2000);
 
@@ -164,7 +166,7 @@ export default function App() {
           sortCol: sortRef.current.sortCol,
           sortKey: sortRef.current.sortKey,
           page: 1,
-          limit: 100,
+          limit: 10,
         })
       );
     }, 250);
@@ -184,57 +186,39 @@ export default function App() {
         sortCol: column,
         sortKey: direction,
         page: 1,
-        limit: 100,
+        limit: 10,
       })
     );
   };
 
-  // Infinite scroll load more handler
-  const handleLoadMore = useCallback(() => {
-    if (!hasMore || isFetchingMore || initialLoading) return;
-    dispatch(
-      fetchTableData({
-        filter: searchText,
-        sortCol: sortRef.current.sortCol,
-        sortKey: sortRef.current.sortKey,
-        page: currentPage + 1,
-        limit: 100,
-      })
-    );
-  }, [hasMore, isFetchingMore, initialLoading, searchText, currentPage, dispatch]);
+  // Step pagination navigation handler
+  // Requirement: "If there is no data for the page the user is navigating to make a fetch call"
+  const handleNavigatePage = (targetPage) => {
+    if (targetPage < 1 || targetPage > totalPages || targetPage === currentPage) return;
 
-  useEffect(() => {
-    loadMoreRef.current = handleLoadMore;
-  }, [handleLoadMore]);
+    const cachedPage = pageCache[targetPage];
+    if (cachedPage && cachedPage.length > 0) {
+      // Page data exists in client cache: avoid network fetch
+      dispatch(setCurrentPage(targetPage));
+    } else {
+      // No data for this page: make a fetch call
+      dispatch(
+        fetchTableData({
+          filter: searchText,
+          sortCol: sortRef.current.sortCol,
+          sortKey: sortRef.current.sortKey,
+          page: targetPage,
+          limit: 10,
+        })
+      );
+    }
+  };
 
-  // Setup Intersection Observer on the sentinel target element
-  useEffect(() => {
-    if (initialLoading) return;
-    const target = observerTarget.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          loadMoreRef.current?.();
-        }
-      },
-      {
-        root: null,
-        rootMargin: '100px',
-        threshold: 0.1,
-      }
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [initialLoading]);
+  const hasLeftPage = currentPage > 1;
+  const hasRightPage = currentPage < totalPages;
 
   return (
-    <div className="mx-auto mt-12 max-w-5xl px-4">
+    <div className="mx-auto mt-12 max-w-5xl px-4 pb-16">
       {initialLoading ? (
         <div className="flex flex-col items-center justify-center min-h-[45vh] py-16 text-center">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 mb-4" />
@@ -279,23 +263,123 @@ export default function App() {
             onSort={handleSort}
           />
 
-          {/* Sentinel for Intersection Observer */}
-          <div ref={observerTarget} className="h-4" />
+          {/* Step Pagination Controls */}
+          <div className="flex flex-col items-center justify-center pt-4">
+            <div className="flex items-center justify-center gap-2">
+              {/* Left arrow button */}
+              <button
+                id="pagination-prev"
+                type="button"
+                aria-label="Previous page"
+                disabled={!hasLeftPage}
+                onClick={() => handleNavigatePage(currentPage - 1)}
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-medium transition shadow-sm ${
+                  !hasLeftPage
+                    ? 'border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer'
+                }`}
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
 
-          {/* Loading more indicator */}
-          {isFetchingMore && (
-            <div className="flex items-center justify-center py-6 gap-2 text-gray-600 text-sm">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-              <span className="font-medium">Loading more rows...</span>
-            </div>
-          )}
+              {/* Left page button (currentPage - 1): empty and invisible if first page is selected */}
+              <button
+                id="pagination-left-page"
+                type="button"
+                aria-label={hasLeftPage ? `Page ${currentPage - 1}` : 'Empty page button'}
+                disabled={!hasLeftPage}
+                onClick={() => hasLeftPage && handleNavigatePage(currentPage - 1)}
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition ${
+                  hasLeftPage
+                    ? 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 shadow-sm cursor-pointer'
+                    : 'invisible pointer-events-none'
+                }`}
+              >
+                {hasLeftPage ? currentPage - 1 : ''}
+              </button>
 
-          {/* All loaded indicator */}
-          {!hasMore && data.length > 0 && (
-            <div className="text-center py-6 text-sm text-gray-500 font-medium">
-              Showing all {total} rows
+              {/* Center page button: contains current page number */}
+              <button
+                id="pagination-center-page"
+                type="button"
+                aria-label={`Page ${currentPage}`}
+                aria-current="page"
+                onClick={() => handleNavigatePage(currentPage)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-600 bg-blue-600 text-white font-semibold text-sm shadow-sm cursor-default"
+              >
+                {currentPage}
+              </button>
+
+              {/* Right page button (currentPage + 1): empty and invisible if last page is selected */}
+              <button
+                id="pagination-right-page"
+                type="button"
+                aria-label={hasRightPage ? `Page ${currentPage + 1}` : 'Empty page button'}
+                disabled={!hasRightPage}
+                onClick={() => hasRightPage && handleNavigatePage(currentPage + 1)}
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition ${
+                  hasRightPage
+                    ? 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 shadow-sm cursor-pointer'
+                    : 'invisible pointer-events-none'
+                }`}
+              >
+                {hasRightPage ? currentPage + 1 : ''}
+              </button>
+
+              {/* Right arrow button */}
+              <button
+                id="pagination-next"
+                type="button"
+                aria-label="Next page"
+                disabled={!hasRightPage}
+                onClick={() => handleNavigatePage(currentPage + 1)}
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-medium transition shadow-sm ${
+                  !hasRightPage
+                    ? 'border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer'
+                }`}
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
             </div>
-          )}
+
+            {/* Pagination status info */}
+            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500 font-medium">
+              <span>
+                Page {currentPage} of {totalPages} ({total} rows)
+              </span>
+              {isPageLoading && (
+                <div className="flex items-center gap-1 text-blue-600">
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+                  <span>Loading...</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

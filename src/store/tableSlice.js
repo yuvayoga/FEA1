@@ -13,8 +13,8 @@ export const fetchTableData = createAsyncThunk(
         params?.sortCol !== undefined ? params.sortCol : (state?.sortCol ?? null);
       const sortKey =
         params?.sortKey !== undefined ? params.sortKey : (state?.sortKey ?? null);
-      const page = params?.page !== undefined ? params.page : (state?.page ?? 1);
-      const limit = params?.limit !== undefined ? params.limit : (state?.limit ?? 100);
+      const page = params?.page !== undefined ? params.page : (state?.currentPage ?? 1);
+      const limit = params?.limit !== undefined ? params.limit : (state?.limit ?? 10);
 
       const url = new URL(API_URL);
       if (filter && String(filter).trim()) {
@@ -44,47 +44,55 @@ export const fetchTableData = createAsyncThunk(
 
 const initialState = {
   data: [],
+  pages: {},
   total: 0,
   loading: true,
-  isFetchingMore: false,
+  pageLoading: false,
   error: null,
   filter: '',
   sortCol: null,
   sortKey: null,
-  page: 1,
-  limit: 100,
-  hasMore: true,
+  currentPage: 1,
+  limit: 10,
 };
 
 const tableSlice = createSlice({
   name: 'table',
   initialState,
   reducers: {
+    setCurrentPage: (state, action) => {
+      const page = action.payload;
+      state.currentPage = page;
+      if (state.pages[page]) {
+        state.data = state.pages[page];
+      }
+    },
+    clearPageCache: (state) => {
+      state.pages = {};
+    },
     setFilter: (state, action) => {
       state.filter = action.payload;
-      state.page = 1;
+      state.currentPage = 1;
+      state.pages = {};
     },
     setSort: (state, action) => {
       state.sortCol = action.payload?.sortCol ?? null;
       state.sortKey = action.payload?.sortKey ?? null;
-      state.page = 1;
+      state.currentPage = 1;
+      state.pages = {};
     },
     resetPagination: (state) => {
-      state.page = 1;
-      state.hasMore = true;
+      state.currentPage = 1;
+      state.pages = {};
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchTableData.pending, (state, action) => {
-        const page = action.meta?.arg?.page ?? 1;
-        if (page === 1) {
-          if (state.data.length === 0) {
-            state.loading = true;
-          }
-          state.isFetchingMore = false;
+        if (state.data.length === 0 && !state.pages[1]) {
+          state.loading = true;
         } else {
-          state.isFetchingMore = true;
+          state.pageLoading = true;
         }
         state.error = null;
         if (action.meta?.arg?.filter !== undefined) {
@@ -99,26 +107,22 @@ const tableSlice = createSlice({
       })
       .addCase(fetchTableData.fulfilled, (state, action) => {
         state.loading = false;
-        state.isFetchingMore = false;
+        state.pageLoading = false;
 
         const incomingRows = Array.isArray(action.payload)
           ? action.payload
           : (action.payload?.rows ?? []);
         const total = action.payload?.total ?? incomingRows.length;
         const page = action.payload?.page ?? 1;
-        const limit = action.payload?.limit ?? 100;
+        const limit = action.payload?.limit ?? 10;
 
         state.total = total;
-        state.page = page;
+        state.currentPage = page;
         state.limit = limit;
 
-        if (page === 1) {
-          state.data = incomingRows;
-        } else {
-          state.data = [...state.data, ...incomingRows];
-        }
-
-        state.hasMore = state.data.length < total && incomingRows.length > 0;
+        // Store page in cache
+        state.pages[page] = incomingRows;
+        state.data = incomingRows;
 
         if (action.meta?.arg?.filter !== undefined) {
           state.filter = action.meta.arg.filter;
@@ -132,13 +136,14 @@ const tableSlice = createSlice({
       })
       .addCase(fetchTableData.rejected, (state, action) => {
         state.loading = false;
-        state.isFetchingMore = false;
+        state.pageLoading = false;
         state.error = action.payload || action.error.message;
       });
   },
 });
 
-export const { setFilter, setSort, resetPagination } = tableSlice.actions;
+export const { setCurrentPage, clearPageCache, setFilter, setSort, resetPagination } =
+  tableSlice.actions;
 
 const selectTableState = (state) => state.table;
 
@@ -157,19 +162,29 @@ export const selectIsLoading = createSelector(
   (table) => table.loading
 );
 
-export const selectIsFetchingMore = createSelector(
+export const selectIsPageLoading = createSelector(
   [selectTableState],
-  (table) => table.isFetchingMore
-);
-
-export const selectHasMore = createSelector(
-  [selectTableState],
-  (table) => table.hasMore
+  (table) => table.pageLoading
 );
 
 export const selectCurrentPage = createSelector(
   [selectTableState],
-  (table) => table.page
+  (table) => table.currentPage
+);
+
+export const selectLimit = createSelector(
+  [selectTableState],
+  (table) => table.limit
+);
+
+export const selectTotalPages = createSelector(
+  [selectTotalRows, selectLimit],
+  (total, limit) => Math.max(1, Math.ceil(total / (limit || 10)))
+);
+
+export const selectPageCache = createSelector(
+  [selectTableState],
+  (table) => table.pages
 );
 
 export const selectError = createSelector(
