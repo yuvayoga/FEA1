@@ -167,6 +167,28 @@ This repository contains the progressive development of Frontend Assignments bui
 - **Clean Architecture ([`src/App.jsx`](src/App.jsx))**:
   - Removed manual `IntersectionObserver` code from `App.jsx`, delegating scroll observation completely to `<Table />`.
 
+### Assignment 14 (FEA14): React Router Integration
+- **React Router Integration (`react-router-dom`)**:
+  - Wrapped root in `<BrowserRouter>` in [`src/main.jsx`](src/main.jsx).
+  - Built adaptive [`Navbar.jsx`](src/components/Navbar.jsx) with active route tracking for `/` (All Companies) and `/add-company` (Add Company).
+  - **`/` (Home)**: Renders [`TablePage.jsx`](src/pages/TablePage.jsx) featuring the full directory table, search filtering, and infinite scroll.
+  - **`/add-company`**: Renders [`AddCompanyPage.jsx`](src/pages/AddCompanyPage.jsx) featuring the high-performance **Cyber Holographic Add Company Form**.
+- **Form Validations**:
+  - **Company**: Text input, strictly required (non-empty trimmed string).
+  - **Contact**: Text input, strictly required (non-empty trimmed string).
+  - **Country**: Dropdown `<select>`, strictly required (valid 3-letter ISO 3166-1 alpha-3 code).
+  - **Email**: Email input, strictly required with format validation regex (`^[^\s@]+@[^\s@]+\.[^\s@]+$`).
+  - **Logo**: File upload, strictly required accepting only `.jpg`, `.jpeg`, and `.png` image formats (max 5 MB).
+- **Submit Button State & Action**:
+  - Submit button dynamically disabled (`cursor-not-allowed`, muted opacity) until all 5 validations pass.
+  - Enables as a glowing electric cyan neon button once all fields are valid.
+  - On submission, executes `console.log(company, contact, country, email, logo file object)` with the raw `File` object.
+- **Cyber Holographic Chamber & High-Performance 3D Staging**:
+  - **Atmosphere**: Cyber chamber with warm amber neon edge light strips, dark reflective grid floor, and ambient cyan glow.
+  - **Intro Sequence**: Smooth, one-time 3D panel entrance sequence that docks cleanly into the active form without blocking user interaction or requiring page redirects.
+  - **Zero-Lag Architecture**: Optimized GPU-accelerated transforms, instantaneous input response, and zero continuous render loops during form editing.
+  - **3D Glass Pedestal**: Translucent dock resting under the form card with glowing action icons.
+
 ---
 
 ## Component API (`<Table />`)
