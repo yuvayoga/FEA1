@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
+import useInfiniteScroll from './hooks/useInfiniteScroll';
 
 function DownArrowIcon({ className = 'h-4 w-4' }) {
   return (
@@ -55,7 +56,17 @@ export default function Table({
   sortCol: propSortCol,
   sortKey: propSortKey,
   onSort,
+  onLoadMore,
+  hasMore = true,
+  isFetchingMore = false,
+  total,
 }) {
+  const { sentinelRef } = useInfiniteScroll({
+    onLoadMore,
+    hasMore,
+    isLoading: isFetchingMore,
+  });
+
   const [internalSortData, setInternalSortData] = useState({
     column: null,
     order: null,
@@ -137,7 +148,8 @@ export default function Table({
   }, [data, currentColumn, currentOrder, isControlled, onSort]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-md shadow-gray-400/60">
+    <div>
+      <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-md shadow-gray-400/60">
       <table className="w-full border-collapse text-left text-sm text-black">
         <thead>
           <tr className="bg-white">
@@ -222,6 +234,25 @@ export default function Table({
         </tbody>
       </table>
     </div>
+
+      {/* Sentinel for Intersection Observer */}
+      {onLoadMore && <div ref={sentinelRef} className="h-4" />}
+
+      {/* Loading more indicator */}
+      {isFetchingMore && (
+        <div className="flex items-center justify-center py-6 gap-2 text-gray-600 text-sm">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+          <span className="font-medium">Loading more rows...</span>
+        </div>
+      )}
+
+      {/* All loaded indicator */}
+      {!hasMore && data.length > 0 && (
+        <div className="text-center py-6 text-sm text-gray-500 font-medium">
+          Showing all {total !== undefined ? total : data.length} rows
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -238,4 +269,8 @@ Table.propTypes = {
   sortCol: PropTypes.string,
   sortKey: PropTypes.string,
   onSort: PropTypes.func,
+  onLoadMore: PropTypes.func,
+  hasMore: PropTypes.bool,
+  isFetchingMore: PropTypes.bool,
+  total: PropTypes.number,
 };

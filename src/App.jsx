@@ -126,8 +126,6 @@ export default function App() {
   const [sortKey, setSortKey] = useState(null);
 
   const sortRef = useRef({ sortCol, sortKey });
-  const observerTarget = useRef(null);
-  const loadMoreRef = useRef();
 
   useEffect(() => {
     sortRef.current = { sortCol, sortKey };
@@ -203,36 +201,6 @@ export default function App() {
     );
   }, [hasMore, isFetchingMore, initialLoading, searchText, currentPage, dispatch]);
 
-  useEffect(() => {
-    loadMoreRef.current = handleLoadMore;
-  }, [handleLoadMore]);
-
-  // Setup Intersection Observer on the sentinel target element
-  useEffect(() => {
-    if (initialLoading) return;
-    const target = observerTarget.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          loadMoreRef.current?.();
-        }
-      },
-      {
-        root: null,
-        rootMargin: '100px',
-        threshold: 0.1,
-      }
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [initialLoading]);
-
   return (
     <div className="mx-auto mt-12 max-w-5xl px-4">
       {initialLoading ? (
@@ -277,25 +245,11 @@ export default function App() {
             sortCol={sortCol || undefined}
             sortKey={sortKey || undefined}
             onSort={handleSort}
+            onLoadMore={handleLoadMore}
+            hasMore={hasMore}
+            isFetchingMore={isFetchingMore}
+            total={total}
           />
-
-          {/* Sentinel for Intersection Observer */}
-          <div ref={observerTarget} className="h-4" />
-
-          {/* Loading more indicator */}
-          {isFetchingMore && (
-            <div className="flex items-center justify-center py-6 gap-2 text-gray-600 text-sm">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-              <span className="font-medium">Loading more rows...</span>
-            </div>
-          )}
-
-          {/* All loaded indicator */}
-          {!hasMore && data.length > 0 && (
-            <div className="text-center py-6 text-sm text-gray-500 font-medium">
-              Showing all {total} rows
-            </div>
-          )}
         </div>
       )}
     </div>

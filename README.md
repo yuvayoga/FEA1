@@ -137,6 +137,36 @@ This repository contains the progressive development of Frontend Assignments bui
   - Displays a completed status (`Showing all X rows`) once all rows have been loaded.
   - Automatically resets pagination back to page 1 whenever search filters or column sorting change.
 
+### Assignment 12 (FEA12): Step Pagination with Page Caching (`limit=10`)
+- Implemented step pagination with a 5-button navigation bar positioned below the table:
+  - **Left arrow button (`<`)**: Navigates to the previous page (`currentPage - 1`); disabled when on the first page.
+  - **Left page button**: Displays `currentPage - 1`; rendered empty and invisible (no border) when the first page is selected.
+  - **Center page button**: Displays the current page number (`currentPage`) with active highlight styling; clicking navigates to the active page.
+  - **Right page button**: Displays `currentPage + 1`; rendered empty and invisible (no border) when the last page is selected.
+  - **Right arrow button (`>`)**: Navigates to the next page (`currentPage + 1`); disabled when on the last page.
+- **Page Size**: Configured `limit=10` items per page.
+- **Client-Side Page Caching**:
+  - Checks Redux state `pages[targetPage]` before triggering network requests.
+  - If data for the requested page already exists in the client cache, navigation occurs instantly without an HTTP call.
+  - If no data exists for the target page, dispatches an API request: `GET http://localhost:8080/api?page=...&limit=10`.
+  - Invalidates the page cache and resets to page 1 whenever `filter` or `sort` changes.
+- **Redux Toolkit Integration (`tableSlice.js`)**:
+  - Manages `data`, `pages` (page-to-rows map), `currentPage`, `total`, `limit`, `loading`, `pageLoading`, and `error`.
+  - Exported memoized selectors: `selectTableData`, `selectTotalRows`, `selectCurrentPage`, `selectTotalPages`, `selectPageCache`, `selectIsPageLoading`.
+
+### Assignment 13 (FEA13): Custom Hook for Infinite Scroll (`useInfiniteScroll`) & Table Integration
+- Extracted the infinite scroll and `IntersectionObserver` logic out of `App.jsx` into a dedicated, reusable custom hook: [`src/hooks/useInfiniteScroll.js`](src/hooks/useInfiniteScroll.js).
+  - Accepts `onLoadMore`, `hasMore`, `isLoading`, `rootMargin`, and `threshold` parameters.
+  - Uses `useRef` to maintain a fresh callback reference to avoid redundant observer re-subscriptions.
+  - Returns `{ sentinelRef }` to attach directly to any target DOM element.
+- **Table Integration ([`src/Table.jsx`](src/Table.jsx))**:
+  - Integrated `useInfiniteScroll` directly inside `<Table />`.
+  - Added support for `onLoadMore`, `hasMore`, `isFetchingMore`, and `total` props.
+  - Renders the sentinel element, bottom loading spinner, and completion status indicator directly within the table component hierarchy.
+  - Documented and validated all new props using `PropTypes`.
+- **Clean Architecture ([`src/App.jsx`](src/App.jsx))**:
+  - Removed manual `IntersectionObserver` code from `App.jsx`, delegating scroll observation completely to `<Table />`.
+
 ---
 
 ## Component API (`<Table />`)
@@ -148,6 +178,10 @@ This repository contains the progressive development of Frontend Assignments bui
 | `sortCol` | `string` | `PropTypes.string` | No | Active sort column key matching the response key name (`company`, `contact`, `country`). |
 | `sortKey` | `string` | `PropTypes.string` | No | Active sort direction (`"asc"` or `"desc"`). |
 | `onSort` | `function` | `PropTypes.func` | No | Callback invoked on column header click with `(columnName, sortKey)`. |
+| `onLoadMore` | `function` | `PropTypes.func` | No | Callback invoked by `useInfiniteScroll` when the sentinel element intersects the viewport. |
+| `hasMore` | `boolean` | `PropTypes.bool` | No | Indicates whether additional data pages exist to fetch (defaults to `true`). |
+| `isFetchingMore` | `boolean` | `PropTypes.bool` | No | Controls display of the bottom loading spinner while loading subsequent batches. |
+| `total` | `number` | `PropTypes.number` | No | Total rows count matching query used for the end-of-list indicator message. |
 
 
 
