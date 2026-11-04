@@ -223,6 +223,22 @@ This repository contains the progressive development of Frontend Assignments bui
   - Submit button dynamically locks/unlocks based on `isValid`.
   - On submission, logs `(Company, Contact, Country, Email, Logo file object)` to the browser console.
 
+### Assignment 16 (FEA16): Form Submission via Backend API Call (`POST /api/submit`)
+- **Backend API Integration (`table-be`)**:
+  - Enhanced Express server with a dedicated `POST /api/submit` endpoint using `multer`.
+  - Supports `multipart/form-data` uploads containing:
+    - `company`: Company name string
+    - `contact`: Contact name string
+    - `country`: Country code string
+    - `email`: Contact email address string
+    - `image`: Uploaded image file (stored in `uploads/` directory)
+  - Persists submitted records into the dataset so newly added companies are instantly queryable in `GET /api`.
+- **Frontend Submission Integration ([`src/pages/AddCompanyPage.jsx`](src/pages/AddCompanyPage.jsx) & [`src/store/tableSlice.js`](src/store/tableSlice.js))**:
+  - Implemented `submitCompany` async thunk with Redux Toolkit to handle asynchronous POST submission and action dispatching (`pending`, `fulfilled`, `rejected`).
+  - Form dispatches `submitCompany(formData)` using `useDispatch()`, passing `FormData` with keys: `company`, `contact`, `country`, `email`, and `image`.
+  - Automatically manages Redux states: `submitLoading`, `submitSuccess`, and `submitError` via memoized selectors (`selectIsSubmitting`, `selectSubmitError`, `selectSubmitSuccess`).
+  - Pre-populates the new company directly into the Redux store on `fulfilled`, ensuring immediate local and global state synchronization.
+
 ---
 
 ## Hook API (`useForm`)

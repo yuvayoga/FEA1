@@ -42,6 +42,28 @@ export const fetchTableData = createAsyncThunk(
   }
 );
 
+export const submitCompany = createAsyncThunk(
+  'table/submitCompany',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_URL}/submit`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        return rejectWithValue(json.message || `Submission failed with status ${response.status}`);
+      }
+
+      return json;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to submit company details');
+    }
+  }
+);
+
 const initialState = {
   data: [],
   total: 0,
@@ -54,6 +76,9 @@ const initialState = {
   page: 1,
   limit: 100,
   hasMore: true,
+  submitLoading: false,
+  submitError: null,
+  submitSuccess: false,
 };
 
 const tableSlice = createSlice({
@@ -72,6 +97,11 @@ const tableSlice = createSlice({
     resetPagination: (state) => {
       state.page = 1;
       state.hasMore = true;
+    },
+    resetSubmitStatus: (state) => {
+      state.submitLoading = false;
+      state.submitError = null;
+      state.submitSuccess = false;
     },
   },
   extraReducers: (builder) => {
@@ -134,11 +164,30 @@ const tableSlice = createSlice({
         state.loading = false;
         state.isFetchingMore = false;
         state.error = action.payload || action.error.message;
+      })
+      .addCase(submitCompany.pending, (state) => {
+        state.submitLoading = true;
+        state.submitError = null;
+        state.submitSuccess = false;
+      })
+      .addCase(submitCompany.fulfilled, (state, action) => {
+        state.submitLoading = false;
+        state.submitSuccess = true;
+        const newRecord = action.payload?.data;
+        if (newRecord) {
+          state.data = [newRecord, ...state.data];
+          state.total = (state.total || 0) + 1;
+        }
+      })
+      .addCase(submitCompany.rejected, (state, action) => {
+        state.submitLoading = false;
+        state.submitError = action.payload || action.error.message;
+        state.submitSuccess = false;
       });
   },
 });
 
-export const { setFilter, setSort, resetPagination } = tableSlice.actions;
+export const { setFilter, setSort, resetPagination, resetSubmitStatus } = tableSlice.actions;
 
 const selectTableState = (state) => state.table;
 
@@ -190,6 +239,21 @@ export const selectSortCol = createSelector(
 export const selectSortKey = createSelector(
   [selectTableState],
   (table) => table.sortKey
+);
+
+export const selectIsSubmitting = createSelector(
+  [selectTableState],
+  (table) => table.submitLoading
+);
+
+export const selectSubmitError = createSelector(
+  [selectTableState],
+  (table) => table.submitError
+);
+
+export const selectSubmitSuccess = createSelector(
+  [selectTableState],
+  (table) => table.submitSuccess
 );
 
 export default tableSlice.reducer;

@@ -1,5 +1,6 @@
 import { useState, useRef, useId, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -17,6 +18,12 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import useForm from '../hooks/useForm';
+import {
+  submitCompany,
+  resetSubmitStatus,
+  selectIsSubmitting,
+  selectSubmitError,
+} from '../store/tableSlice';
 import '../App.css';
 
 const countries = [
@@ -136,7 +143,11 @@ CyberField.propTypes = {
 
 export default function AddCompanyPage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const fileInputRef = useRef(null);
+
+  const isSubmitting = useSelector(selectIsSubmitting);
+  const submitError = useSelector(selectSubmitError);
 
   const companyId = useId();
   const contactId = useId();
@@ -179,7 +190,7 @@ export default function AddCompanyPage() {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
 
@@ -188,14 +199,33 @@ export default function AddCompanyPage() {
       return;
     }
 
-    console.log('Company:', values.company.trim());
-    console.log('Contact:', values.contact.trim());
-    console.log('Country:', values.country);
-    console.log('Email:', values.email.trim());
-    console.log('Logo file object:', values.logo.file);
-
-    setSuccess(true);
     setError('');
+
+    try {
+      const payload = new FormData();
+      payload.append('company', values.company.trim());
+      payload.append('contact', values.contact.trim());
+      payload.append('country', values.country);
+      payload.append('email', values.email.trim());
+      if (values.logo?.file) {
+        payload.append('image', values.logo.file);
+      }
+
+      const result = await dispatch(submitCompany(payload)).unwrap();
+
+      console.log('Company:', values.company.trim());
+      console.log('Contact:', values.contact.trim());
+      console.log('Country:', values.country);
+      console.log('Email:', values.email.trim());
+      console.log('Logo file object:', values.logo.file);
+      console.log('Submission result:', result);
+
+      setSuccess(true);
+      setError('');
+    } catch (err) {
+      console.error('Submission error:', err);
+      setError(typeof err === 'string' ? err : err?.message || 'Failed to submit company details.');
+    }
   };
 
   const handleReplayIntro = () => {
@@ -484,19 +514,19 @@ export default function AddCompanyPage() {
                     )}
                   </div>
 
-                  {error && (
+                  {(error || submitError) && (
                     <div style={{ color: '#f87171', fontSize: '11px', marginTop: '10px' }}>
-                      {error}
+                      {error || submitError}
                     </div>
                   )}
 
                   <div className="df-actions">
                     <button
                       type="submit"
-                      disabled={!isValid}
-                      className={`df-submit-btn ${isValid ? 'ready' : ''}`}
+                      disabled={!isValid || isSubmitting}
+                      className={`df-submit-btn ${isValid && !isSubmitting ? 'ready' : ''}`}
                     >
-                      <span>Add Company</span>
+                      <span>{isSubmitting ? 'Submitting...' : 'Add Company'}</span>
                       <ArrowRight size={16} />
                     </button>
                   </div>
@@ -523,6 +553,7 @@ export default function AddCompanyPage() {
                       onClick={() => {
                         setSuccess(false);
                         setSubmitted(false);
+                        dispatch(resetSubmitStatus());
                         if (values.logo?.url) {
                           URL.revokeObjectURL(values.logo.url);
                         }
