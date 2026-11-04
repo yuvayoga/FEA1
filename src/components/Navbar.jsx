@@ -13,7 +13,6 @@ export default function Navbar() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        {/* Brand */}
         <NavLink
           to="/"
           className={`flex items-center gap-2 text-lg font-bold transition ${
@@ -32,7 +31,6 @@ export default function Navbar() {
           <span>NEXUS Directory</span>
         </NavLink>
 
-        {/* Navigation links */}
         <nav className="flex items-center gap-2">
           <NavLink
             to="/"

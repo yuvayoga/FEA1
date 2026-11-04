@@ -189,6 +189,71 @@ This repository contains the progressive development of Frontend Assignments bui
   - **Zero-Lag Architecture**: Optimized GPU-accelerated transforms, instantaneous input response, and zero continuous render loops during form editing.
   - **3D Glass Pedestal**: Translucent dock resting under the form card with glowing action icons.
 
+### Assignment 15 (FEA15): Centralized Form Validation with `useForm` Custom Hook
+- **Custom Hook `useForm` ([`src/hooks/useForm.js`](src/hooks/useForm.js))**:
+  - Eliminates individual field-by-field validation checks within form components by centralizing state and validation rules into a declarative `formStructure`.
+  - **Input Structure (`formStructure`)**:
+    - Accepts an array of field definitions (or an object keyed by field IDs).
+    - Each field definition specifies:
+      - **`id`**: Unique identifier matching the form field key (`company`, `contact`, `country`, `email`, `logo`).
+      - **`initialValue`**: Initial default value for the field (`''` or `null`).
+      - **`validations`**: Array of validator functions or rule objects. Each validator evaluates `(value, allValues)` and returns an error message string if invalid, or `''`/`null`/`undefined` if valid. Also supports boolean validators and rule objects (`required`, `pattern`, `validate`).
+  - **Returned Hook API**:
+    - **`values`**: Key-value map representing the current state of all form fields.
+    - **`valuesSetter`**: Unified value setter supporting:
+      1. Field ID and value pair: `valuesSetter(id, value)`
+      2. Native `onChange` event object: `valuesSetter(e)` (automatically extracts `name`/`id` and `value` or `files[0]`)
+      3. State updater function: `valuesSetter((prev) => ({ ...prev, ... }))`
+      4. Object merge/update: `valuesSetter({ [id]: value })`
+    - **`errors`**: Object denoting validation errors in each field if there is one (`errors[fieldId]`), or `''` if valid.
+    - **Additional Utilities**:
+      - **`isValid`**: Boolean indicating whether all fields currently satisfy all validation rules.
+      - **`touched`**: Map of touched fields for deferred UI error display.
+      - **`handleBlur`**: Blur event listener to mark fields as touched.
+      - **`resetForm`**: Resets form values and validation state back to initial values.
+- **Form Integration ([`src/pages/AddCompanyPage.jsx`](src/pages/AddCompanyPage.jsx))**:
+  - Replaced manual field validation state with `useForm(formStructure)`.
+  - Configured 5 declarative validation rules:
+    - **`company`**: Required non-empty string.
+    - **`contact`**: Required non-empty string.
+    - **`country`**: Required valid ISO 3166-1 alpha-3 code selection from the allowed dataset.
+    - **`email`**: Required valid email matching `EMAIL_REGEX`.
+    - **`logo`**: Required image file upload restricted to JPG/PNG formats under 5 MB.
+  - Linked `valuesSetter` directly to input/select `onChange` handlers and file upload portals.
+  - Submit button dynamically locks/unlocks based on `isValid`.
+  - On submission, logs `(Company, Contact, Country, Email, Logo file object)` to the browser console.
+
+---
+
+## Hook API (`useForm`)
+
+### Hook Parameters
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `formStructure` | `Array<FieldConfig> \| Record<string, FieldConfig>` | Yes | Field configuration containing `id`, optional `initialValue`, and `validations`. |
+| `initialValuesOverride` | `Record<string, any>` | No | Optional dictionary to override default field initial values. |
+
+#### `FieldConfig` Shape
+
+| Property | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `string` | Yes | Field identifier matching input `name` or state key. |
+| `initialValue` | `any` | No | Initial default value for the field (defaults to `''`). |
+| `validations` | `Array<Function \| Object> \| Function \| Object` | Yes | Validation rules evaluated on each change. Returns error string if invalid. |
+
+### Hook Return Values
+
+| Return Property | Type | Description |
+| :--- | :--- | :--- |
+| `values` | `Record<string, any>` | Current form values keyed by field `id`. |
+| `valuesSetter` | `Function` | Unified setter handling `(id, value)`, `(e)`, `(fn)`, or `(object)`. |
+| `errors` | `Record<string, string>` | Active validation errors keyed by field `id`. Non-empty string denotes an error. |
+| `isValid` | `boolean` | `true` when every field passes all validations, `false` otherwise. |
+| `touched` | `Record<string, boolean>` | Tracked interaction state for each field. |
+| `handleBlur` | `Function` | Blur handler to record field interaction. |
+| `resetForm` | `Function` | Resets form values and touched states to initial values. |
+
 ---
 
 ## Component API (`<Table />`)
@@ -538,19 +603,27 @@ Table.propTypes = {
 ```text
 FEA1/
 ├── public/
-│   └── favicon.svg      # Favicon
+│   └── favicon.svg              # Favicon
 ├── src/
-│   ├── store/           # Redux Toolkit state management
-│   │   ├── store.js     # Redux store configuration (configureStore)
-│   │   └── tableSlice.js# Slice, createAsyncThunk & createSelector
-│   ├── App.jsx          # Parent component with filter, sort, & Redux state
-│   ├── Table.jsx        # Clean, reusable prop-driven Table component
-│   ├── index.css        # Global stylesheet with Tailwind CSS directives
-│   └── main.jsx         # React DOM entry point wrapped in Redux Provider
-├── db.json              # Mock database served by json-server
-├── index.html           # Main HTML document
-├── package.json         # Project metadata & scripts
-└── vite.config.js       # Vite build configuration
+│   ├── components/
+│   │   └── Navbar.jsx           # Top navigation bar with active route highlighting
+│   ├── hooks/
+│   │   ├── useForm.js           # Custom hook for centralized form validation
+│   │   └── useInfiniteScroll.js # Custom hook for Intersection Observer scroll pagination
+│   ├── pages/
+│   │   ├── AddCompanyPage.jsx   # Cyber Holographic Add Company Form with useForm
+│   │   └── TablePage.jsx        # Full table directory with search & infinite scroll
+│   ├── store/                   # Redux Toolkit state management
+│   │   ├── store.js             # Redux store configuration
+│   │   └── tableSlice.js        # Table slice with fetchTableData async thunk
+│   ├── App.css                  # Cyber Holographic 3D styles & lighting
+│   ├── App.jsx                  # Main router switch component
+│   ├── index.css                # Global stylesheet with Tailwind CSS directives
+│   ├── main.jsx                 # React DOM entry point wrapped in Redux & BrowserRouter
+│   └── Table.jsx                # Reusable prop-driven Table component
+├── index.html                   # Main HTML document
+├── package.json                 # Project metadata & scripts
+└── vite.config.js               # Vite build configuration
 ```
 
 ---

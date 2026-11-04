@@ -16,6 +16,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
+import useForm from '../hooks/useForm';
 import '../App.css';
 
 const countries = [
@@ -45,14 +46,67 @@ const VALID_COUNTRY_CODES = new Set(countries.map(([code]) => code));
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 
-const initialFormData = {
-  company: '',
-  contact: '',
-  country: '',
-  email: '',
-};
+const formStructure = [
+  {
+    id: 'company',
+    initialValue: '',
+    validations: [
+      (val) => (!val || !val.trim() ? 'Company name is required' : ''),
+    ],
+  },
+  {
+    id: 'contact',
+    initialValue: '',
+    validations: [
+      (val) => (!val || !val.trim() ? 'Contact name is required' : ''),
+    ],
+  },
+  {
+    id: 'country',
+    initialValue: '',
+    validations: [
+      (val) => {
+        if (!val) return 'Country selection is required';
+        if (!VALID_COUNTRY_CODES.has(val)) return 'Please select a valid country';
+        return '';
+      },
+    ],
+  },
+  {
+    id: 'email',
+    initialValue: '',
+    validations: [
+      (val) => {
+        if (!val || !val.trim()) return 'Email is required';
+        if (!EMAIL_REGEX.test(val.trim())) return 'Please enter a valid email address';
+        return '';
+      },
+    ],
+  },
+  {
+    id: 'logo',
+    initialValue: null,
+    validations: [
+      (val) => {
+        if (!val || !val.file) {
+          return 'Company logo is required';
+        }
+        const file = val.file;
+        const isTypeAllowed =
+          ALLOWED_IMAGE_TYPES.includes(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+        if (!isTypeAllowed) {
+          return 'Invalid format: Only JPG and PNG images are accepted';
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          return 'File size must be below 5 MB';
+        }
+        return '';
+      },
+    ],
+  },
+];
 
-function CyberField({ icon: Icon, label, id, children }) {
+function CyberField({ icon: Icon, label, id, error, touched, children }) {
   return (
     <div className="df-field">
       <label htmlFor={id}>
@@ -62,6 +116,11 @@ function CyberField({ icon: Icon, label, id, children }) {
         <Icon size={16} />
         {children}
       </div>
+      {touched && error && (
+        <span style={{ color: '#f87171', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }
@@ -70,6 +129,8 @@ CyberField.propTypes = {
   icon: PropTypes.elementType.isRequired,
   label: PropTypes.string.isRequired,
   id: PropTypes.string.isRequired,
+  error: PropTypes.string,
+  touched: PropTypes.bool,
   children: PropTypes.node.isRequired,
 };
 
@@ -82,12 +143,12 @@ export default function AddCompanyPage() {
   const countryId = useId();
   const emailId = useId();
 
-  const [formData, setFormData] = useState(initialFormData);
-  const [logo, setLogo] = useState(null);
+  const { values, valuesSetter, errors, isValid, touched, handleBlur, resetForm } =
+    useForm(formStructure);
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-
-  // Performance optimized: One-time smooth entrance sequence (no infinite loops = zero lag!)
+  const [submitted, setSubmitted] = useState(false);
   const [isIntroPlaying, setIsIntroPlaying] = useState(true);
 
   useEffect(() => {
@@ -96,22 +157,6 @@ export default function AddCompanyPage() {
     }, 1200);
     return () => clearTimeout(timer);
   }, []);
-
-  // Validation rules
-  const isCompanyValid = formData.company.trim().length > 0;
-  const isContactValid = formData.contact.trim().length > 0;
-  const isCountryValid = VALID_COUNTRY_CODES.has(formData.country);
-  const isEmailValid = EMAIL_REGEX.test(formData.email.trim());
-  const isLogoValid = logo !== null && logo.file !== undefined;
-
-  // Submit enabled only when all 5 validations pass
-  const isFormValid =
-    isCompanyValid && isContactValid && isCountryValid && isEmailValid && isLogoValid;
-
-  const handleInputChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError('');
-  };
 
   const handleFileUpload = (file) => {
     if (!file) return;
@@ -130,24 +175,24 @@ export default function AddCompanyPage() {
     }
 
     const url = URL.createObjectURL(file);
-    setLogo({ file, url });
+    valuesSetter('logo', { file, url });
     setError('');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setSubmitted(true);
 
-    if (!isFormValid) {
+    if (!isValid) {
       setError('Please fill in all required fields and upload your company logo.');
       return;
     }
 
-    // Required by user prompt: simply console log (Company, contact, country, email, logo file object for now)
-    console.log('Company:', formData.company.trim());
-    console.log('Contact:', formData.contact.trim());
-    console.log('Country:', formData.country);
-    console.log('Email:', formData.email.trim());
-    console.log('Logo file object:', logo.file);
+    console.log('Company:', values.company.trim());
+    console.log('Contact:', values.contact.trim());
+    console.log('Country:', values.country);
+    console.log('Email:', values.email.trim());
+    console.log('Logo file object:', values.logo.file);
 
     setSuccess(true);
     setError('');
@@ -162,7 +207,6 @@ export default function AddCompanyPage() {
 
   return (
     <div className="cyber-app">
-      {/* 3D Cyber Chamber Lighting Beams (Matching Image 2!) */}
       <div className="chamber-beams">
         <div className="beam-top" />
         <div className="beam-bottom" />
@@ -170,12 +214,10 @@ export default function AddCompanyPage() {
         <div className="beam-pillar-r" />
       </div>
 
-      {/* Cyber Floor Grid & Ambient Cyan Glow */}
       <div className="cyber-floor-grid" />
       <div className="cyber-chamber-glow" />
 
       <div className="cyber-scene">
-        {/* Top Chamber Header & Status Bar */}
         <header className="chamber-control-bar">
           <div className="chamber-status-tag">
             <span className="status-dot-pulse" />
@@ -208,9 +250,7 @@ export default function AddCompanyPage() {
           </div>
         </header>
 
-        {/* 3D Hologram Stage */}
         <div className="hologram-stage">
-          {/* Background Holographic Card Left (Image 1 Style) */}
           <div
             className="bg-hologram-card left-card"
             style={{
@@ -235,7 +275,6 @@ export default function AddCompanyPage() {
             <div className="bg-signature">Nexus Enterprise Registry &bull; 2026</div>
           </div>
 
-          {/* Background Holographic Card Right (Image 1 Style) */}
           <div
             className="bg-hologram-card right-card"
             style={{
@@ -263,14 +302,12 @@ export default function AddCompanyPage() {
             </div>
           </div>
 
-          {/* The Main Interactive Add Company Form Card */}
           <motion.div
             className="digital-form-card"
             initial={{ opacity: 0, scale: 0.88, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Form Top Heading */}
             <div className="df-header">
               <div className="df-title-wrap">
                 <h2>
@@ -287,39 +324,57 @@ export default function AddCompanyPage() {
               {!success ? (
                 <form key="add-company-form" onSubmit={handleSubmit}>
                   <div className="df-grid">
-                    {/* Field 1: Company */}
-                    <CyberField icon={Building2} label="Company" id={companyId}>
+                    <CyberField
+                      icon={Building2}
+                      label="Company"
+                      id={companyId}
+                      error={errors.company}
+                      touched={submitted || touched.company}
+                    >
                       <input
                         id={companyId}
                         name="company"
-                        value={formData.company}
-                        onChange={handleInputChange}
+                        value={values.company}
+                        onChange={valuesSetter}
+                        onBlur={handleBlur}
                         placeholder="e.g. Acme Corporation"
                         required
                         autoComplete="organization"
                       />
                     </CyberField>
 
-                    {/* Field 2: Contact */}
-                    <CyberField icon={UserRound} label="Contact" id={contactId}>
+                    <CyberField
+                      icon={UserRound}
+                      label="Contact"
+                      id={contactId}
+                      error={errors.contact}
+                      touched={submitted || touched.contact}
+                    >
                       <input
                         id={contactId}
                         name="contact"
-                        value={formData.contact}
-                        onChange={handleInputChange}
+                        value={values.contact}
+                        onChange={valuesSetter}
+                        onBlur={handleBlur}
                         placeholder="e.g. Sarah Connor"
                         required
                         autoComplete="name"
                       />
                     </CyberField>
 
-                    {/* Field 3: Country */}
-                    <CyberField icon={Globe2} label="Country" id={countryId}>
+                    <CyberField
+                      icon={Globe2}
+                      label="Country"
+                      id={countryId}
+                      error={errors.country}
+                      touched={submitted || touched.country}
+                    >
                       <select
                         id={countryId}
                         name="country"
-                        value={formData.country}
-                        onChange={handleInputChange}
+                        value={values.country}
+                        onChange={valuesSetter}
+                        onBlur={handleBlur}
                         required
                       >
                         <option value="">Select country</option>
@@ -331,14 +386,20 @@ export default function AddCompanyPage() {
                       </select>
                     </CyberField>
 
-                    {/* Field 4: Email */}
-                    <CyberField icon={Mail} label="Email" id={emailId}>
+                    <CyberField
+                      icon={Mail}
+                      label="Email"
+                      id={emailId}
+                      error={errors.email}
+                      touched={submitted || touched.email}
+                    >
                       <input
                         id={emailId}
                         type="email"
                         name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
+                        value={values.email}
+                        onChange={valuesSetter}
+                        onBlur={handleBlur}
                         placeholder="e.g. contact@acme.com"
                         required
                         autoComplete="email"
@@ -346,7 +407,6 @@ export default function AddCompanyPage() {
                     </CyberField>
                   </div>
 
-                  {/* Field 5: Logo Upload (JPG/PNG <= 5MB) */}
                   <div className="df-upload-portal">
                     <div className="df-upload-label">
                       <span>
@@ -385,11 +445,11 @@ export default function AddCompanyPage() {
                         }}
                       />
 
-                      {logo ? (
+                      {values.logo ? (
                         <div className="df-logo-preview">
-                          <img src={logo.url} alt="Logo preview" />
+                          <img src={values.logo.url} alt="Logo preview" />
                           <div className="df-logo-info">
-                            <strong>{logo.file.name}</strong>
+                            <strong>{values.logo.file.name}</strong>
                             <span>Logo uploaded successfully</span>
                           </div>
                           <button
@@ -397,8 +457,10 @@ export default function AddCompanyPage() {
                             className="df-remove-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              URL.revokeObjectURL(logo.url);
-                              setLogo(null);
+                              if (values.logo?.url) {
+                                URL.revokeObjectURL(values.logo.url);
+                              }
+                              valuesSetter('logo', null);
                             }}
                           >
                             Remove
@@ -414,6 +476,12 @@ export default function AddCompanyPage() {
                         </>
                       )}
                     </div>
+
+                    {(submitted || touched.logo) && errors.logo && (
+                      <div style={{ color: '#f87171', fontSize: '11px', marginTop: '6px' }}>
+                        {errors.logo}
+                      </div>
+                    )}
                   </div>
 
                   {error && (
@@ -422,12 +490,11 @@ export default function AddCompanyPage() {
                     </div>
                   )}
 
-                  {/* Submit Button */}
                   <div className="df-actions">
                     <button
                       type="submit"
-                      disabled={!isFormValid}
-                      className={`df-submit-btn ${isFormValid ? 'ready' : ''}`}
+                      disabled={!isValid}
+                      className={`df-submit-btn ${isValid ? 'ready' : ''}`}
                     >
                       <span>Add Company</span>
                       <ArrowRight size={16} />
@@ -446,7 +513,7 @@ export default function AddCompanyPage() {
                   </div>
                   <h3>Company Added Successfully</h3>
                   <p>
-                    <strong>{formData.company}</strong> ({formData.country}) has been recorded and
+                    <strong>{values.company}</strong> ({values.country}) has been recorded and
                     logged to the console.
                   </p>
                   <div className="df-success-actions">
@@ -455,8 +522,11 @@ export default function AddCompanyPage() {
                       className="df-btn-primary"
                       onClick={() => {
                         setSuccess(false);
-                        setFormData(initialFormData);
-                        setLogo(null);
+                        setSubmitted(false);
+                        if (values.logo?.url) {
+                          URL.revokeObjectURL(values.logo.url);
+                        }
+                        resetForm();
                       }}
                     >
                       Add Another Company
@@ -492,7 +562,6 @@ export default function AddCompanyPage() {
             </div>
           </motion.div>
 
-          {/* The Glass Pedestal Base */}
           <div className="glass-pedestal">
             <div
               className="pedestal-dock-item"

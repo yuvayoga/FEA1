@@ -20,10 +20,7 @@ button {
   cursor: pointer;
 }
 
-/* ========================================================
-   CYBER HOLOGRAPHIC CHAMBER (PERFORMANCE OPTIMIZED)
-   High-performance GPU acceleration, zero lag, smooth 120 FPS
-   ======================================================== */
+
 
 .cyber-app {
   min-height: calc(100vh - 65px);
@@ -39,7 +36,7 @@ button {
   perspective: 1200px;
 }
 
-/* Static, Lightweight Reflective Floor Grid */
+
 .cyber-floor-grid {
   position: absolute;
   bottom: -30px;
@@ -57,7 +54,7 @@ button {
   mask-image: radial-gradient(ellipse at 50% 60%, black 20%, transparent 80%);
 }
 
-/* Ambient Cyan Glow in Chamber */
+
 .cyber-chamber-glow {
   position: absolute;
   width: 750px;
@@ -75,7 +72,7 @@ button {
   pointer-events: none;
 }
 
-/* Room Perimeter Neon Strips (Warm Amber / Gold like Image 2) */
+
 .chamber-beams {
   position: absolute;
   inset: 12px;
@@ -117,7 +114,7 @@ button {
 .beam-pillar-l { left: 3%; }
 .beam-pillar-r { right: 3%; }
 
-/* Scene Container */
+
 .cyber-scene {
   position: relative;
   width: min(1160px, 100%);
@@ -129,7 +126,7 @@ button {
   z-index: 2;
 }
 
-/* Top Chamber Control Bar */
+
 .chamber-control-bar {
   width: 100%;
   max-width: 860px;
@@ -191,7 +188,7 @@ button {
   color: #fff;
 }
 
-/* 3D Holographic Stage */
+
 .hologram-stage {
   position: relative;
   width: 100%;
@@ -203,7 +200,7 @@ button {
   transform-style: preserve-3d;
 }
 
-/* Background Floating Cards (Static after intro for zero GPU lag) */
+
 .bg-hologram-card {
   position: absolute;
   width: 240px;
@@ -276,7 +273,7 @@ button {
   padding-bottom: 4px;
 }
 
-/* The Main Interactive Add Company Form Card */
+
 .digital-form-card {
   position: relative;
   width: min(540px, 94vw);
@@ -289,11 +286,11 @@ button {
     inset 0 0 15px rgba(0, 240, 255, 0.1);
   padding: 28px 30px;
   z-index: 5;
-  transform-style: flat; /* Flat transform during input for instantaneous 120fps typing */
+  transform-style: flat; 
   will-change: transform, opacity;
 }
 
-/* Form Top Heading */
+
 .df-header {
   display: flex;
   align-items: center;
@@ -335,7 +332,7 @@ button {
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
 }
 
-/* Form Grid */
+
 .df-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -400,7 +397,7 @@ button {
   color: #e0f2fe;
 }
 
-/* Upload Portal */
+
 .df-upload-portal {
   margin-top: 16px;
 }
@@ -503,7 +500,7 @@ button {
   color: #fff;
 }
 
-/* Submit Button */
+
 .df-actions {
   margin-top: 20px;
   display: flex;
@@ -541,7 +538,7 @@ button {
   box-shadow: 0 0 30px rgba(0, 240, 255, 0.8);
 }
 
-/* The Glass Pedestal Base */
+
 .glass-pedestal {
   margin-top: 20px;
   width: min(500px, 88vw);
@@ -575,7 +572,7 @@ button {
   border-color: #00f0ff;
 }
 
-/* Success Modal inside the Form */
+
 .df-success-panel {
   display: flex;
   flex-direction: column;
@@ -639,7 +636,7 @@ button {
   cursor: pointer;
 }
 
-/* Responsive */
+
 @media (max-width: 900px) {
   .bg-hologram-card {
     display: none;

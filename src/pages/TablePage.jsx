@@ -36,7 +36,6 @@ import {
 } from '../store/tableSlice';
 
 const FLAG_ICONS = {
-  // ISO 3166-1 alpha-3 codes from backend API
   ARE: AE,
   AUS: AU,
   BRA: BR,
@@ -57,7 +56,6 @@ const FLAG_ICONS = {
   SWE: SE,
   USA: US,
   ZAF: ZA,
-  // ISO 3166-1 alpha-2 codes
   AE,
   AT,
   AU,
@@ -79,7 +77,6 @@ const FLAG_ICONS = {
   SG,
   US,
   ZA,
-  // Full names for backwards compatibility
   Germany: DE,
   Mexico: MX,
   Austria: AT,
@@ -152,7 +149,6 @@ export default function TablePage() {
     setSearchText(e.target.value);
   };
 
-  // Debounced search query param updates
   useEffect(() => {
     if (initialLoading) return;
 
@@ -173,7 +169,6 @@ export default function TablePage() {
     };
   }, [searchText, initialLoading, dispatch]);
 
-  // Handle column header sort updates via query params
   const handleSort = (column, direction) => {
     setSortCol(column);
     setSortKey(direction);
@@ -188,7 +183,6 @@ export default function TablePage() {
     );
   };
 
-  // Infinite scroll load more handler
   const handleLoadMore = useCallback(() => {
     if (!hasMore || isFetchingMore || initialLoading) return;
     dispatch(
@@ -221,7 +215,6 @@ export default function TablePage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Header Controls: Search filter & Add Company button */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white p-4 shadow-xs">
             <div className="flex flex-1 items-center gap-3">
               <label
