@@ -54,7 +54,10 @@ export const submitCompany = createAsyncThunk(
       const json = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        return rejectWithValue(json.message || `Submission failed with status ${response.status}`);
+        const errorMsg = json.errors
+          ? Object.values(json.errors).join(', ')
+          : json.message || `Submission failed with status ${response.status}`;
+        return rejectWithValue(errorMsg);
       }
 
       return json;
@@ -173,7 +176,7 @@ const tableSlice = createSlice({
       .addCase(submitCompany.fulfilled, (state, action) => {
         state.submitLoading = false;
         state.submitSuccess = true;
-        const newRecord = action.payload?.data;
+        const newRecord = action.payload?.data || (action.payload?.id ? action.payload : null);
         if (newRecord) {
           state.data = [newRecord, ...state.data];
           state.total = (state.total || 0) + 1;

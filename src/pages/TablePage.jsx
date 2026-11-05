@@ -88,6 +88,7 @@ const FLAG_ICONS = {
 };
 
 const headers = [
+  { name: 'id', label: 'ID' },
   { name: 'company', label: 'Company', sortable: true },
   { name: 'contact', label: 'Contact', sortable: true },
   {
@@ -103,6 +104,25 @@ const headers = [
         </span>
       ) : (
         row.country
+      );
+    },
+  },
+  {
+    name: 'logo',
+    label: 'Logo',
+    render: (row) => {
+      if (!row.logo) {
+        return '-';
+      }
+      return (
+        <img
+          src={row.logo}
+          alt={`${row.company} logo`}
+          className="h-8 w-8 object-contain rounded"
+          width="32"
+          height="32"
+          style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+        />
       );
     },
   },

@@ -239,6 +239,21 @@ This repository contains the progressive development of Frontend Assignments bui
   - Automatically manages Redux states: `submitLoading`, `submitSuccess`, and `submitError` via memoized selectors (`selectIsSubmitting`, `selectSubmitError`, `selectSubmitSuccess`).
   - Pre-populates the new company directly into the Redux store on `fulfilled`, ensuring immediate local and global state synchronization.
 
+### Assignment 17 (FEA17): Table Logo Column & Full API Row Data Display
+- **Backend API Dataset Expansion (`table-be`)**:
+  - `GET /api` serves all record properties including `id`, `company`, `contact`, `country`, and dynamic `logo` URL (when available).
+  - Newly submitted companies via `POST /api/submit` store logo images in `uploads/` and dynamically expose full image URLs via `/api/uploads/{id}.(png|jpg)`.
+- **Frontend Table Integration ([`src/pages/TablePage.jsx`](src/pages/TablePage.jsx))**:
+  - Expanded `<Table />` header configuration to display all dataset fields:
+    - **`ID`** (`id`): Numeric row identifier matching dataset keys.
+    - **`Company`** (`company`): Sortable company name.
+    - **`Contact`** (`contact`): Sortable contact person.
+    - **`Country`** (`country`): Sortable country code rendered with vector flag icons.
+    - **`Logo`** (`logo`): Company logo column with custom cell rendering.
+  - Custom cell rendering for `logo`:
+    - Renders a dash (`"-"`) placeholder when the logo is not present.
+    - Renders an `<img>` tag constrained to fixed dimensions (`32px × 32px`, `object-contain`) to cleanly fit within the table row without layout shifting.
+
 ---
 
 ## Hook API (`useForm`)
