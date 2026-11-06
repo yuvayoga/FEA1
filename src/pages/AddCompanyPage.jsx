@@ -24,32 +24,9 @@ import {
   selectIsSubmitting,
   selectSubmitError,
 } from '../store/tableSlice';
+import { countries, VALID_COUNTRY_CODES } from '../constants/countries';
 import '../App.css';
 
-const countries = [
-  ['ARE', 'United Arab Emirates'],
-  ['AUS', 'Australia'],
-  ['BRA', 'Brazil'],
-  ['CAN', 'Canada'],
-  ['CHN', 'China'],
-  ['DEU', 'Germany'],
-  ['ESP', 'Spain'],
-  ['FRA', 'France'],
-  ['GBR', 'United Kingdom'],
-  ['IND', 'India'],
-  ['IRL', 'Ireland'],
-  ['ITA', 'Italy'],
-  ['JPN', 'Japan'],
-  ['KOR', 'South Korea'],
-  ['MEX', 'Mexico'],
-  ['NLD', 'Netherlands'],
-  ['SGP', 'Singapore'],
-  ['SWE', 'Sweden'],
-  ['USA', 'United States'],
-  ['ZAF', 'South Africa'],
-];
-
-const VALID_COUNTRY_CODES = new Set(countries.map(([code]) => code));
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 

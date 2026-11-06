@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { Pencil } from 'lucide-react';
 import {
   AE,
   AT,
@@ -25,6 +26,7 @@ import {
   ZA,
 } from 'country-flag-icons/react/3x2';
 import Table from '../Table';
+import CompanySlider from '../components/CompanySlider';
 import {
   fetchTableData,
   selectTableData,
@@ -87,47 +89,6 @@ const FLAG_ICONS = {
   'United States': US,
 };
 
-const headers = [
-  { name: 'id', label: 'ID' },
-  { name: 'company', label: 'Company', sortable: true },
-  { name: 'contact', label: 'Contact', sortable: true },
-  {
-    name: 'country',
-    label: 'Country',
-    sortable: true,
-    render: (row) => {
-      const Flag = FLAG_ICONS[row.country];
-      return Flag ? (
-        <span className="inline-flex items-center gap-2">
-          <Flag title={row.country} className="h-4 w-6 rounded-xs shadow-xs" />
-          <span>{row.country}</span>
-        </span>
-      ) : (
-        row.country
-      );
-    },
-  },
-  {
-    name: 'logo',
-    label: 'Logo',
-    render: (row) => {
-      if (!row.logo) {
-        return '-';
-      }
-      return (
-        <img
-          src={row.logo}
-          alt={`${row.company} logo`}
-          className="h-8 w-8 object-contain rounded"
-          width="32"
-          height="32"
-          style={{ width: '32px', height: '32px', objectFit: 'contain' }}
-        />
-      );
-    },
-  },
-];
-
 export default function TablePage() {
   const dispatch = useDispatch();
   const data = useSelector(selectTableData);
@@ -138,6 +99,78 @@ export default function TablePage() {
   const error = useSelector(selectError);
   const [countdown, setCountdown] = useState(2);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [isSliderOpen, setIsSliderOpen] = useState(false);
+
+  const handleOpenSlider = useCallback((row) => {
+    setSelectedRow(row);
+    setIsSliderOpen(true);
+  }, []);
+
+  const handleCloseSlider = useCallback(() => {
+    setIsSliderOpen(false);
+    setSelectedRow(null);
+  }, []);
+
+  const headers = useMemo(
+    () => [
+      { name: 'id', label: 'ID' },
+      { name: 'company', label: 'Company', sortable: true },
+      { name: 'contact', label: 'Contact', sortable: true },
+      {
+        name: 'country',
+        label: 'Country',
+        sortable: true,
+        render: (row) => {
+          const Flag = FLAG_ICONS[row.country];
+          return Flag ? (
+            <span className="inline-flex items-center gap-2">
+              <Flag title={row.country} className="h-4 w-6 rounded-xs shadow-xs" />
+              <span>{row.country}</span>
+            </span>
+          ) : (
+            row.country
+          );
+        },
+      },
+      {
+        name: 'logo',
+        label: 'Logo',
+        render: (row) => {
+          if (!row.logo) {
+            return '-';
+          }
+          return (
+            <img
+              src={row.logo}
+              alt={`${row.company} logo`}
+              className="h-8 w-8 object-contain rounded"
+              width="32"
+              height="32"
+              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+            />
+          );
+        },
+      },
+      {
+        name: 'action',
+        label: 'Action',
+        render: (row) => (
+          <button
+            type="button"
+            onClick={() => handleOpenSlider(row)}
+            className="inline-flex items-center justify-center p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+            title="Edit company"
+            aria-label={`Edit ${row.company || 'company'}`}
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+        ),
+      },
+    ],
+    [handleOpenSlider]
+  );
 
   const [searchText, setSearchText] = useState('');
   const [sortCol, setSortCol] = useState(null);
@@ -274,6 +307,12 @@ export default function TablePage() {
           />
         </div>
       )}
+
+      <CompanySlider
+        isOpen={isSliderOpen}
+        onClose={handleCloseSlider}
+        row={selectedRow}
+      />
     </div>
   );
 }

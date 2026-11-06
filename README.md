@@ -254,6 +254,23 @@ This repository contains the progressive development of Frontend Assignments bui
     - Renders a dash (`"-"`) placeholder when the logo is not present.
     - Renders an `<img>` tag constrained to fixed dimensions (`32px × 32px`, `object-contain`) to cleanly fit within the table row without layout shifting.
 
+### Assignment 18 (FEA18): Action Column with Edit Pencil Button & Prefilled Slide-Over Drawer
+- **Action Column Integration ([`src/pages/TablePage.jsx`](src/pages/TablePage.jsx))**:
+  - Added an **`Action`** (`action`) column to each row in the `<Table />` component.
+  - Renders a styled pencil icon button (`lucide-react` `Pencil`) for every row.
+  - Clicking the pencil button opens an interactive slide-over drawer / slider populated with that specific row's data.
+- **Slide-Over Form Drawer ([`src/components/CompanySlider.jsx`](src/components/CompanySlider.jsx))**:
+  - Built an animated slide-over panel powered by `framer-motion` (`AnimatePresence` and `motion.div`) with an accessible backdrop overlay.
+  - Supports keyboard accessibility (closes on `Escape` key press or clicking outside).
+  - Replicates all form fields from `/add-company`:
+    - **`Company`**: Text input prefilled with selected row's company name.
+    - **`Contact`**: Text input prefilled with selected row's contact person.
+    - **`Country`**: Select dropdown prefilled with selected row's country code from the standard 20-country dataset.
+    - **`Email`**: Email input prefilled with selected row's contact email.
+    - **`Logo`**: Logo portal displaying the existing prefilled image preview (with remove option) or file dropzone for uploading new JPG/PNG assets.
+  - Prefilled form state managed declaratively using the custom `useForm` hook (`src/hooks/useForm.js`).
+  - Placed a dedicated **`Submit`** button after the form that outputs the current field values to the browser console via `console.log`.
+
 ---
 
 ## Hook API (`useForm`)
