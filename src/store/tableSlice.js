@@ -4,7 +4,7 @@ const API_URL = 'http://localhost:8080/api';
 
 export const fetchTableData = createAsyncThunk(
   'table/fetchTableData',
-  async (params = {}, { getState, rejectWithValue }) => {
+  async (params = {}, { getState, signal, rejectWithValue }) => {
     try {
       const state = getState()?.table;
       const filter =
@@ -29,13 +29,17 @@ export const fetchTableData = createAsyncThunk(
       url.searchParams.set('page', String(page));
       url.searchParams.set('limit', String(limit));
 
-      const response = await fetch(url.toString());
+      const requestSignal = params?.signal || signal;
+      const response = await fetch(url.toString(), { signal: requestSignal });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const json = await response.json();
       return { ...json, page, limit };
     } catch (error) {
+      if (error.name === 'AbortError') {
+        return rejectWithValue('aborted');
+      }
       console.error('Failed to fetch table data:', error);
       return rejectWithValue(error.message || 'Failed to fetch table data');
     }
@@ -197,6 +201,9 @@ const tableSlice = createSlice({
         }
       })
       .addCase(fetchTableData.rejected, (state, action) => {
+        if (action.payload === 'aborted' || action.error?.name === 'AbortError') {
+          return;
+        }
         state.loading = false;
         state.isFetchingMore = false;
         state.error = action.payload || action.error.message;

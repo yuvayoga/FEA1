@@ -283,6 +283,16 @@ This repository contains the progressive development of Frontend Assignments bui
   - Connected slider form submission to dispatch `editCompany({ id: row.id, formData })`.
   - Automatically synchronizes Redux store state on `fulfilled` action, updating table rows without requiring a page refresh.
 
+### Assignment 20 (FEA20): Search Debouncing (3s) & Race-Condition Cancellation with AbortController
+- **3-Second Search Debounce ([`src/pages/TablePage.jsx`](src/pages/TablePage.jsx))**:
+  - Upgraded table search input debouncing from 250ms to **3 seconds (3000ms)**.
+  - Automatically resets timer on subsequent keystrokes, firing the filter query only after the user stops typing for 3s.
+- **Race Condition Prevention via `AbortController` ([`src/pages/TablePage.jsx`](src/pages/TablePage.jsx) & [`src/store/tableSlice.js`](src/store/tableSlice.js))**:
+  - Integrated `AbortController` to abort any active in-flight request before initiating a new API call.
+  - Handled in `fetchTableData` by wiring `params.signal || signal` into the native `fetch()` call.
+  - Gracefully intercepts `AbortError` in both the async thunk and Redux slice reducer, preventing rejected state flashing or race conditions.
+  - Guarantees clean cleanup when switching filters, sorting columns, paginating, or unmounting the component.
+
 ---
 
 ## Hook API (`useForm`)

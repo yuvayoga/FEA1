@@ -177,10 +177,48 @@ export default function TablePage() {
   const [sortKey, setSortKey] = useState(null);
 
   const sortRef = useRef({ sortCol, sortKey });
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     sortRef.current = { sortCol, sortKey };
   }, [sortCol, sortKey]);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const fetchWithAbort = useCallback(
+    (params) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      const promise = dispatch(
+        fetchTableData({
+          ...params,
+          signal: controller.signal,
+        })
+      );
+
+      promise
+        .unwrap()
+        .catch(() => {})
+        .finally(() => {
+          if (abortControllerRef.current === controller) {
+            abortControllerRef.current = null;
+          }
+        });
+
+      return promise;
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -188,7 +226,7 @@ export default function TablePage() {
     }, 1000);
 
     const timer = setTimeout(async () => {
-      await dispatch(fetchTableData({ page: 1, limit: 100 })).unwrap().catch(() => {});
+      await fetchWithAbort({ page: 1, limit: 100 });
       setInitialLoading(false);
     }, 2000);
 
@@ -196,7 +234,7 @@ export default function TablePage() {
       clearInterval(interval);
       clearTimeout(timer);
     };
-  }, [dispatch]);
+  }, [fetchWithAbort]);
 
   const handleSearchChange = (e) => {
     setSearchText(e.target.value);
@@ -206,48 +244,42 @@ export default function TablePage() {
     if (initialLoading) return;
 
     const timer = setTimeout(() => {
-      dispatch(
-        fetchTableData({
-          filter: searchText,
-          sortCol: sortRef.current.sortCol,
-          sortKey: sortRef.current.sortKey,
-          page: 1,
-          limit: 100,
-        })
-      );
-    }, 250);
+      fetchWithAbort({
+        filter: searchText,
+        sortCol: sortRef.current.sortCol,
+        sortKey: sortRef.current.sortKey,
+        page: 1,
+        limit: 100,
+      });
+    }, 3000);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [searchText, initialLoading, dispatch]);
+  }, [searchText, initialLoading, fetchWithAbort]);
 
   const handleSort = (column, direction) => {
     setSortCol(column);
     setSortKey(direction);
-    dispatch(
-      fetchTableData({
-        filter: searchText,
-        sortCol: column,
-        sortKey: direction,
-        page: 1,
-        limit: 100,
-      })
-    );
+    fetchWithAbort({
+      filter: searchText,
+      sortCol: column,
+      sortKey: direction,
+      page: 1,
+      limit: 100,
+    });
   };
 
   const handleLoadMore = useCallback(() => {
     if (!hasMore || isFetchingMore || initialLoading) return;
-    dispatch(
-      fetchTableData({
-        filter: searchText,
-        sortCol: sortRef.current.sortCol,
-        sortKey: sortRef.current.sortKey,
-        page: currentPage + 1,
-        limit: 100,
-      })
-    );
-  }, [hasMore, isFetchingMore, initialLoading, searchText, currentPage, dispatch]);
+    fetchWithAbort({
+      filter: searchText,
+      sortCol: sortRef.current.sortCol,
+      sortKey: sortRef.current.sortKey,
+      page: currentPage + 1,
+      limit: 100,
+    });
+  }, [hasMore, isFetchingMore, initialLoading, searchText, currentPage, fetchWithAbort]);
 
   return (
     <div className="mx-auto mt-8 max-w-5xl px-4 pb-16">
