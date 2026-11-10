@@ -271,6 +271,18 @@ This repository contains the progressive development of Frontend Assignments bui
   - Prefilled form state managed declaratively using the custom `useForm` hook (`src/hooks/useForm.js`).
   - Placed a dedicated **`Submit`** button after the form that outputs the current field values to the browser console via `console.log`.
 
+### Assignment 19 (FEA19): Edit Company API Call (`PUT /api/edit/{id}`)
+- **Backend API Update Endpoint (`table-be`)**:
+  - Implemented `PUT /api/edit/:id` (and `POST /api/edit/:id`) endpoint accepting multipart/form-data.
+  - Accepts keys: `company`, `contact`, `country`, `email`, and `image`.
+  - Validates input fields and saves updated records to `data.json`.
+  - Handles image replacement or retains existing logo when no new image is uploaded.
+  - Responds with `200` status and the updated company object with formatted logo URL.
+- **Frontend Submission Integration ([`src/components/CompanySlider.jsx`](src/components/CompanySlider.jsx) & [`src/store/tableSlice.js`](src/store/tableSlice.js))**:
+  - Added `editCompany` async thunk with Redux Toolkit to make `PUT /api/edit/{id}` calls with `FormData`.
+  - Connected slider form submission to dispatch `editCompany({ id: row.id, formData })`.
+  - Automatically synchronizes Redux store state on `fulfilled` action, updating table rows without requiring a page refresh.
+
 ---
 
 ## Hook API (`useForm`)

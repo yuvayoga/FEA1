@@ -67,6 +67,31 @@ export const submitCompany = createAsyncThunk(
   }
 );
 
+export const editCompany = createAsyncThunk(
+  'table/editCompany',
+  async ({ id, formData }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_URL}/edit/${id}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const errorMsg = json.errors
+          ? Object.values(json.errors).join(', ')
+          : json.message || `Edit failed with status ${response.status}`;
+        return rejectWithValue(errorMsg);
+      }
+
+      return json;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Failed to edit company details');
+    }
+  }
+);
+
 const initialState = {
   data: [],
   total: 0,
@@ -82,6 +107,9 @@ const initialState = {
   submitLoading: false,
   submitError: null,
   submitSuccess: false,
+  editLoading: false,
+  editError: null,
+  editSuccess: false,
 };
 
 const tableSlice = createSlice({
@@ -105,6 +133,11 @@ const tableSlice = createSlice({
       state.submitLoading = false;
       state.submitError = null;
       state.submitSuccess = false;
+    },
+    resetEditStatus: (state) => {
+      state.editLoading = false;
+      state.editError = null;
+      state.editSuccess = false;
     },
   },
   extraReducers: (builder) => {
@@ -186,11 +219,31 @@ const tableSlice = createSlice({
         state.submitLoading = false;
         state.submitError = action.payload || action.error.message;
         state.submitSuccess = false;
+      })
+      .addCase(editCompany.pending, (state) => {
+        state.editLoading = true;
+        state.editError = null;
+        state.editSuccess = false;
+      })
+      .addCase(editCompany.fulfilled, (state, action) => {
+        state.editLoading = false;
+        state.editSuccess = true;
+        const updatedRecord = action.payload?.data || (action.payload?.id ? action.payload : null);
+        if (updatedRecord) {
+          state.data = state.data.map((row) =>
+            row.id === updatedRecord.id ? { ...row, ...updatedRecord } : row
+          );
+        }
+      })
+      .addCase(editCompany.rejected, (state, action) => {
+        state.editLoading = false;
+        state.editError = action.payload || action.error.message;
+        state.editSuccess = false;
       });
   },
 });
 
-export const { setFilter, setSort, resetPagination, resetSubmitStatus } = tableSlice.actions;
+export const { setFilter, setSort, resetPagination, resetSubmitStatus, resetEditStatus } = tableSlice.actions;
 
 const selectTableState = (state) => state.table;
 
@@ -257,6 +310,21 @@ export const selectSubmitError = createSelector(
 export const selectSubmitSuccess = createSelector(
   [selectTableState],
   (table) => table.submitSuccess
+);
+
+export const selectIsEditing = createSelector(
+  [selectTableState],
+  (table) => table.editLoading
+);
+
+export const selectEditError = createSelector(
+  [selectTableState],
+  (table) => table.editError
+);
+
+export const selectEditSuccess = createSelector(
+  [selectTableState],
+  (table) => table.editSuccess
 );
 
 export default tableSlice.reducer;

@@ -1,9 +1,16 @@
 import { useRef, useMemo, useEffect, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Building2, UserRound, Globe2, Mail } from 'lucide-react';
 import useForm from '../hooks/useForm';
 import { countries } from '../constants/countries';
+import {
+  editCompany,
+  resetEditStatus,
+  selectIsEditing,
+  selectEditError,
+} from '../store/tableSlice';
 
 const formStructure = [
   { id: 'company', initialValue: '' },
@@ -14,6 +21,9 @@ const formStructure = [
 ];
 
 export default function CompanySlider({ isOpen, onClose, row }) {
+  const dispatch = useDispatch();
+  const isEditing = useSelector(selectIsEditing);
+  const editError = useSelector(selectEditError);
   const fileInputRef = useRef(null);
 
   const initialValues = useMemo(() => {
@@ -73,7 +83,7 @@ export default function CompanySlider({ isOpen, onClose, row }) {
   }, [values.logo, valuesSetter]);
 
   const handleSubmit = useCallback(
-    (e) => {
+    async (e) => {
       if (e && e.preventDefault) {
         e.preventDefault();
       }
@@ -84,8 +94,27 @@ export default function CompanySlider({ isOpen, onClose, row }) {
       console.log('Logo:', values.logo);
       console.log('Field values:', values);
       console.log(values);
+
+      if (!row?.id) return;
+
+      const payload = new FormData();
+      payload.append('company', (values.company || '').trim());
+      payload.append('contact', (values.contact || '').trim());
+      payload.append('country', values.country || '');
+      payload.append('email', (values.email || '').trim());
+      if (values.logo?.file) {
+        payload.append('image', values.logo.file);
+      }
+
+      try {
+        await dispatch(editCompany({ id: row.id, formData: payload })).unwrap();
+        dispatch(resetEditStatus());
+        onClose();
+      } catch (err) {
+        console.error('Failed to update company:', err);
+      }
     },
-    [values]
+    [dispatch, row, values, onClose]
   );
 
   return (
@@ -279,14 +308,21 @@ export default function CompanySlider({ isOpen, onClose, row }) {
                 </div>
               </form>
 
+              {editError && (
+                <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">
+                  {editError}
+                </div>
+              )}
+
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <button
                   type="submit"
                   form="edit-company-slider-form"
                   onClick={handleSubmit}
-                  className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-700 active:bg-blue-800 transition-colors cursor-pointer"
+                  disabled={isEditing}
+                  className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-blue-700 active:bg-blue-800 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  Submit
+                  {isEditing ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </div>
